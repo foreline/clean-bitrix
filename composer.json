@@ -8,13 +8,9 @@
       "email": "dima@foreline.ru"
     }
   ],
-  "config": {
-    "platform": {
-    }
-  },
   "require": {
     "php": ">=8.0",
-    "foreline/clean": "^0.0.01",
+    "foreline/clean": "^0.0.02",
     "webmozart/assert": "^1.11",
     "symfony/http-foundation": ">6.3",
     "ext-curl": "*"
@@ -30,10 +26,6 @@
       "Infrastructure\\": "src/Infrastructure",
       "Presentation\\": "src/Presentation"
     }
-  },
-  "autoload-dev": {
-    "classmap": [
-    ]
   },
   "repositories": [
     {

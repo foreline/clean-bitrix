@@ -15,7 +15,7 @@
     use Exception;
     
     /**
-     * Data Transfer Object для Пользователя
+     * Data Transfer Object for User
      */
     class UserProxy
     {

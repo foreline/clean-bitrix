@@ -2,6 +2,7 @@
     declare(strict_types=1);
     
     namespace Presentation\Helpers;
+    
     /**
      *
      */
@@ -208,9 +209,8 @@
         }
         
         /**
-         *
+         * @deprecated
          */
-        
         public static function showMonthSelector(array $arFields = []): void
         {
             $month = self::getMonth();
@@ -231,7 +231,6 @@
             
             echo '
             <script type="text/javascript">
-                
                 function getDateUrl(obDate) {
                     obDate = JSON.parse(obDate);
                     let urlParams = "' . $urlParams . '";
@@ -240,7 +239,6 @@
                     
                     return "?" + urlParams + "&year=" + year + "&month=" + month;
                 }
-                
             </script>
             
             <select class="float-start" onChange="window.location=getDateUrl(this.value); return false;">

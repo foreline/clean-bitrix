@@ -17,7 +17,7 @@
     use RuntimeException;
     
     /**
-     * Репозиторий для работы с пользователями Bitrix D7
+     * User Repository (Bitrix D7)
      */
     class UserRepository extends UserProxy implements UserRepositoryInterface
     {

@@ -14,7 +14,7 @@
     use Exception;
     
     /**
-     *
+     * File Repository
      */
     class FileRepository implements FileRepositoryInterface
     {
@@ -278,24 +278,36 @@
             return true;
         }
     
+        /**
+         * @return void
+         */
         public function startTransaction(): void
         {
             // TODO: Implement startTransaction() method.
         }
     
+        /**
+         * @return void
+         */
         public function commitTransaction(): void
         {
             // TODO: Implement commitTransaction() method.
         }
     
+        /**
+         * @return void
+         */
         public function rollbackTransaction(): void
         {
             // TODO: Implement rollbackTransaction() method.
         }
     
+        /**
+         * @return int
+         */
         public function getTotalCount(): int
         {
             // TODO: Implement getTotalCount() method.
-            return 0;
+            return 0; // @fixme
         }
     }
