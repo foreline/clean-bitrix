@@ -16,7 +16,7 @@
     /**
      * File Repository
      */
-    class FileRepository implements FileRepositoryInterface
+    class FileRepository extends FileProxy implements FileRepositoryInterface
     {
         /** @var Result|null  */
         private ?Result $result = null;
@@ -35,57 +35,9 @@
         /**
          * @return string
          */
-        private function getUploadDir(): string
+        public function getUploadDir(): string
         {
             return $this->uploadDir;
-        }
-    
-        /**
-         * @param mixed $obj
-         * @return File
-         */
-        private function objectToEntity(mixed $obj): File
-        {
-            $file = new File();
-            $file
-                ->setId((int)$obj->get('ID'))
-                ->setFileName((string)$obj->get('NAME'))
-                ->setOriginalName((string)$obj->get('ORIGINAL_NAME'));
-            return $file;
-        }
-        
-        /**
-         * @param array $data
-         * @return File
-         */
-        private function arrayToEntity(array $data): File
-        {
-            $file = new File();
-    
-            if ( array_key_exists('ID', $data) ) {
-                $file->setId((int)$data['ID']);
-            }
-            if ( array_key_exists('FILE_SIZE', $data) ) {
-                $file->setSize((int)$data['FILE_SIZE']);
-            }
-            if ( array_key_exists('FILE_NAME', $data) ) {
-                $file->setFileName((string)$data['FILE_NAME']);
-            }
-            if ( array_key_exists('ORIGINAL_NAME', $data) ) {
-                $file->setOriginalName((string)$data['ORIGINAL_NAME']);
-            }
-            if ( !empty($data['SUBDIR']) ) {
-                $source = '/' . $this->getUploadDir() . '/' . $data['SUBDIR'] . '/' . $file->getFileName();
-                $file->setSource($source);
-                $file->setPath($_SERVER['DOCUMENT_ROOT'] . '/' . $file->getSource());
-            }
-            if ( array_key_exists('DESCRIPTION', $data) ) {
-                $file->setDescription((string)$data['DESCRIPTION']);
-            }
-            
-            //$file->setSlug();
-            
-            return $file;
         }
         
         /**
@@ -126,10 +78,10 @@
             }
             
             $lim = (int) ( $limit['page_size'] ?: $limit['limit']);
-    
+            
             if ( 0 < $lim ) {
                 $params['limit'] = $lim;
-        
+                
                 if ( 0 < (int)$limit['page_num'] ) {
                     $params['offset'] = (int)$limit['limit'] * ( (int)$limit['page_num'] - 1 );
                 } elseif ( 0 < (int)$limit['offset'] ) {
@@ -165,30 +117,23 @@
          */
         private function create(File $file): int
         {
-            /*$data = CFile::MakeFileArray(
-                $file->getPath(),
-                false,
-                false,
-                ''
-            );*/
-    
             $data = [
                 'name'          => $file->getName(),
                 'size'          => $file->getSize(),
-                'tmp_name'      => $file->getPath(),
+                'tmp_name'      => $file->getTmpName(),
                 'description'   => $file->getDescription(),
             ];
-    
+            
             if ( $file->isRemoved() ) {
                 // @fixme
                 $data['del'] = 'Y';
                 $data['old_file'] = $file->getId();
             }
-    
+            
             if ( !$fileId = CFile::SaveFile($data, 'files'/*, checkDuplicates: false*/) ) {
                 throw new Exception('Ошибка при регистрации файла');
             }
-    
+            
             return (int)$fileId;
         }
         
@@ -277,7 +222,7 @@
             }
             return true;
         }
-    
+        
         /**
          * @return void
          */
@@ -285,7 +230,7 @@
         {
             // TODO: Implement startTransaction() method.
         }
-    
+        
         /**
          * @return void
          */
@@ -293,7 +238,7 @@
         {
             // TODO: Implement commitTransaction() method.
         }
-    
+        
         /**
          * @return void
          */
@@ -301,7 +246,7 @@
         {
             // TODO: Implement rollbackTransaction() method.
         }
-    
+        
         /**
          * @return int
          */

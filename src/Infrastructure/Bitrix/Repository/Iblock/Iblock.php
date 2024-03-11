@@ -12,6 +12,8 @@
     use CIBlockProperty;
     use Domain\Exception\NotFoundException;
     use Exception;
+    use Webmozart\Assert\Assert;
+    use Webmozart\Assert\InvalidArgumentException;
     
     /**
      *
@@ -27,7 +29,7 @@
         public static function load(string $filePath): void
         {
             if ( !file_exists($filePath) ) {
-                throw new NotFoundException('Файл "' . $filePath . '" не существует');
+                throw new NotFoundException('File "' . $filePath . '" does not exist');
             }
             
             $iblockJson = file_get_contents($filePath);
@@ -52,7 +54,7 @@
                 $iblockProperty = new CIBlockProperty();
                 
                 $res = CIBlockProperty::GetList(false, ['IBLOCK_ID' => $iblockId, 'CODE' => $propertyData['CODE']]);
-    
+                
                 if ( 'E' === $propertyData['PROPERTY_TYPE'] && !empty($propertyData['XML_ID']) ) {
                     $linkIblockId = self::getIblockByCode((string)$propertyData['XML_ID'])['ID'];
                     $propertyData['LINK_IBLOCK_ID'] = (int)$linkIblockId;
@@ -99,6 +101,8 @@
          */
         public static function getJson(string $iblockCode): string
         {
+            Assert::notEmpty($iblockCode, 'Iblock Code is empty');
+            
             $iblock = self::getIblockByCode($iblockCode);
             
             $propertiesRes = PropertyTable::getList([
@@ -122,7 +126,7 @@
             
             return json_encode($iblock, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
         }
-    
+        
         /**
          * @param int $iblockId
          * @return string
@@ -133,46 +137,58 @@
             $iblock = self::getIblockById($iblockId);
             return $iblock['CODE'];
         }
-    
+        
         /**
          * @param int $iblockId
-         * @return array
-         * @throws Exception
+         * @return array $iblock
+         * @throws Exception|InvalidArgumentException
          */
         public static function getIblockById(int $iblockId): array
         {
+            Assert::greaterThan($iblockId, 0, 'IBlock ID must be greater than 0. Given ID is "' . $iblockId . '"');
+            
             $res = IblockTable::getList([
                 'filter' => [
                     'ID' => $iblockId,
                 ],
                 'select' => ['*'],
             ]);
-    
+            
             if ( !$res ) {
-                throw new Exception('Инфоблок с ID ' . $iblockId . ' не найден');
+                throw new NotFoundException('Iblock with ID "' . $iblockId . '" not found');
             }
-    
-            return $res->fetch();
+            
+            if ( !$iblock = $res->fetch() ) {
+                throw new Exception('Iblock with ID "' . $iblockId . '" could not be fetched');
+            }
+            
+            return $iblock;
         }
-    
+        
         /**
          * @param string $iblockCode
-         * @return array
+         * @return array $iblock
          * @throws Exception
          */
         public static function getIblockByCode(string $iblockCode): array
         {
+            Assert::notEmpty($iblockCode, 'Iblock code is empty');
+            
             $res = IblockTable::getList([
                 'filter' => [
                     'CODE' => $iblockCode,
                 ],
                 'select' => ['*'],
             ]);
-    
+            
             if ( !$res ) {
-                throw new Exception('Инфоблок с кодом ' . $iblockCode . ' не найден');
+                throw new NotFoundException('Iblock with code "' . $iblockCode . '" not found');
             }
-    
-            return $res->fetch();
+            
+            if ( !$iblock = $res->fetch() ) {
+                throw new Exception('Iblock with code "' . $iblockCode . '" couldnot be fetched');
+            }
+            
+            return $iblock;
         }
     }

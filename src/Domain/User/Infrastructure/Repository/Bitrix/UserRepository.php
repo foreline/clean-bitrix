@@ -17,10 +17,13 @@
     use RuntimeException;
     
     /**
-     * User Repository (Bitrix D7)
+     * Репозиторий для работы с пользователями Bitrix D7
      */
     class UserRepository extends UserProxy implements UserRepositoryInterface
     {
+        /** @var array<int, User> */
+        private static array $cache = [];
+        
         protected ?Result $result = null;
         
         /**
@@ -146,11 +149,7 @@
                 throw new InvalidArgumentException('Не задан ID пользователя');
             }*/
             
-            if ( !$users = $this->find(filter: ['=id' => $id], fields: $fields)) {
-                return null;
-            }
-            
-            return $users->current();
+            return self::$cache[$id] ?: $this->find(filter: ['=id' => $id], fields: $fields)?->current();
         }
         
         /**
@@ -175,6 +174,7 @@
             $users = new UserCollection();
             
             while ( $user = $this->fetchObject() ) {
+                self::$cache[$user->getId()] = $user;
                 $users->addItem($user);
             }
             
@@ -210,6 +210,8 @@
                 $userId = $this->create($user);
                 $user->setId($userId);
             }
+            
+            unset(self::$cache[$user->getId()]);
             
             return $this->findById($user->getId());
         }
@@ -284,6 +286,8 @@
             if ( !$result = CUser::Delete($id) ) {
                 return false;
             }
+            
+            unset(self::$cache[$id]);
             
             UserTable::cleanCache();
             
