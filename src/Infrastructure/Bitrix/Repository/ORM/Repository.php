@@ -20,6 +20,7 @@
          * @param iterable $limit
          * @param iterable $fields
          * @return array
+         * @noinspection PhpTooManyParametersInspection
          */
         public function getParams(iterable $filter = [], iterable $sort = [], iterable $limit = [], iterable $fields = []): array
         {

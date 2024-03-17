@@ -154,14 +154,14 @@
          * @param User $user
          * @param mixed $obj
          * @return $this
+         * @throws ArgumentException|ObjectPropertyException|SystemException
          */
         private function getUserFields(User $user, mixed $obj): self
         {
-            
             $resFields = UserFieldTable::getList(
                 [
                     'filter' => [
-                        'ENTITY_ID'                     =>   'USER',
+                        'ENTITY_ID' => 'USER',
                     ]
                 ]
             );

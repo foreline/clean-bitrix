@@ -39,7 +39,7 @@
             $groupData = $this->entityToArray($group);
             $groupData = array_change_key_case($groupData, CASE_UPPER);
             $result = $cGroup->Update($group->getId(), $groupData);
-            return (bool)$result;
+            return $result;
         }
     
         /**

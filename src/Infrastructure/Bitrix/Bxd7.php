@@ -22,6 +22,7 @@
     use Bitrix\Main\ORM\Objectify\EntityObject;
     use Bitrix\Main\SystemException;
     use Bitrix\Main\Type\DateTime;
+    use CIBlock;
     use CIBlockElement;
     use CIBlockPropertyEnum;
     use Domain\Aggregate\AggregateInterface;
@@ -53,7 +54,7 @@
         private const FIELD_TYPE_ENUM = 'enum';
         private const FIELD_TYPE_BOOL = 'bool';
         
-        /** @var array|\string[][] Типы полей инфоблока */
+        /** @var array|string[][] Типы полей инфоблока */
         private array $fields = [
             'ID' => [
                 'type' => self::FIELD_TYPE_INT,
@@ -262,36 +263,16 @@
          */
         private function propertyTypeToFieldType(string $propertyType): string
         {
-            switch ( $propertyType ) {
-                case PropertyTable::TYPE_NUMBER:
-                    $fieldType = self::FIELD_TYPE_INT;
-                    break;
-                case PropertyTable::TYPE_STRING:
-                    $fieldType = self::FIELD_TYPE_STRING;
-                    break;
-                case PropertyTable::TYPE_ELEMENT:
-                    $fieldType = self::FIELD_TYPE_ELEMENT;
-                    break;
-                case PropertyTable::TYPE_FILE:
-                    $fieldType = self::FIELD_TYPE_FILE;
-                    break;
-                case PropertyTable::TYPE_LIST:
-                    $fieldType = self::FIELD_TYPE_ENUM;
-                    break;
-                case PropertyTable::USER_TYPE_DATETIME:
-                    $fieldType = self::FIELD_TYPE_DATETIME;
-                    break;
-                case PropertyTable::USER_TYPE_DATE:
-                    $fieldType = self::FIELD_TYPE_DATE;
-                    break;
-                case PropertyTable::USER_TYPE_USER:
-                    $fieldType = self::FIELD_TYPE_USER;
-                    break;
-                default:
-                    // uncomment when debug
-                    //throw new Exception('UNKNOWN PROPERTY TYPE: ' . $propertyType);
-                    $fieldType = self::FIELD_TYPE_STRING;
-            }
+            $fieldType = match ( $propertyType ) {
+                PropertyTable::TYPE_NUMBER => self::FIELD_TYPE_INT,
+                PropertyTable::TYPE_ELEMENT => self::FIELD_TYPE_ELEMENT,
+                PropertyTable::TYPE_FILE => self::FIELD_TYPE_FILE,
+                PropertyTable::TYPE_LIST => self::FIELD_TYPE_ENUM,
+                PropertyTable::USER_TYPE_DATETIME => self::FIELD_TYPE_DATETIME,
+                PropertyTable::USER_TYPE_DATE => self::FIELD_TYPE_DATE,
+                PropertyTable::USER_TYPE_USER => self::FIELD_TYPE_USER,
+                default => self::FIELD_TYPE_STRING,
+            };
             return $fieldType;
         }
         
@@ -336,20 +317,21 @@
                 'fields' => $fields,
             ]);*/
             
-            $iblock = new \CIBlock();
+            $iblock = new CIBlock();
             if ( !$iblockId = $iblock->Add(array_change_key_case($fields, CASE_UPPER)) ) {
                 throw new Exception('Ошибка при создании инфоблока:' . $iblock->LAST_ERROR);
             }
             
             return IblockTable::getById($iblockId)->fetchObject();
         }
-        
+    
         /**
          * @param string $typeCode
          * @return string
          * @throws ArgumentException
          * @throws ObjectPropertyException
          * @throws SystemException
+         * @throws Exception
          */
         private function getIblockType(string $typeCode = ''): string
         {
@@ -388,16 +370,15 @@
             $this->enumProperties = $enumProperties;
             return $this;
         }
-        
+    
         /**
          * @param array $filter
          * @param array $sort
          * @param array $limit
          * @param array $fields
-         * @throws InvalidArgumentException
-         * @throws RuntimeException
          * @return ?self
          * @noinspection PhpTooManyParametersInspection
+         * @throws RuntimeException|Exception|InvalidArgumentException
          */
         protected function query(array $filter = [], array $sort = [], array $limit = [], array $fields = []): ?self
         {
@@ -513,7 +494,7 @@
                 
             } catch (ArgumentException $e) {
                 throw new InvalidArgumentException($e->getMessage(), $e->getCode(), $e->getPrevious());
-            } catch (ObjectPropertyException|SystemException $e) {
+            } catch (SystemException|ObjectPropertyException $e) {
                 throw new RuntimeException($e->getMessage(), $e->getCode(), $e->getPrevious());
             }
             
@@ -717,10 +698,11 @@
             
             return $filter;
         }
-        
+    
         /**
          * @param array $sort
          * @return array
+         * @throws Exception
          */
         private function prepareSort(array $sort): array
         {
@@ -751,14 +733,8 @@
                     case self::FIELD_TYPE_DATETIME:
                         $preparedField = $field;
                         break;
-                    case self::FIELD_TYPE_STRING:
-                        if ( $isProperty ) {
-                            $preparedField = $field . '.value';
-                        } else {
-                            $preparedField = $field;
-                        }
-                        break;
                     case self::FIELD_TYPE_INT:
+                    case self::FIELD_TYPE_STRING:
                         if ( $isProperty ) {
                             $preparedField = $field . '.value';
                         } else {
@@ -780,8 +756,7 @@
                         }
                         break;
                     default:
-                        throw new \Exception('UNKNOWN FIELD TYPE: ' . $fieldType);
-                        $preparedField = $field;
+                        throw new Exception('UNKNOWN FIELD TYPE: ' . $fieldType);
                 }
                 
                 unset($sort[$field]);

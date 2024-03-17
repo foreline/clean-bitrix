@@ -1,11 +1,13 @@
 <?php
     declare(strict_types=1);
     
-    namespace Infrastructure\Mailer;
+    namespace Infrastructure\Mailer\Bitrix;
 
     use Bitrix\Main\Config\Option;
     use Bitrix\Main\Mail\Mail;
     use Exception;
+    use Infrastructure\Mailer\MailerInterface;
+    use Infrastructure\Mailer\MessageInterface;
 
     /**
      *

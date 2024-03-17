@@ -16,6 +16,7 @@
          * @param array $limit
          * @param array $fields
          * @return mixed
+         * @noinspection PhpMissingReturnTypeInspection
          */
         public function find(array $filter = [], array $sort = [], array $limit = [], array $fields = []);
     
@@ -25,6 +26,7 @@
          * @param array $sort
          * @param array $limit
          * @return mixed
+         * @noinspection PhpMissingReturnTypeInspection
          */
         public function findFields(array $fields = [], array $filter = [], array $sort = [], array $limit = []);
     

@@ -48,6 +48,7 @@
          * @return $this
          * @throws Exception
          * @noinspection PhpTooManyParametersInspection
+         * @noinspection PhpSameParameterValueInspection
          */
         private function query(array $filter = [], array $sort = [], array $limit = [], array $fields = []): self
         {
