@@ -37,6 +37,7 @@
                 'CONTENT_TYPE'  => 'html',
                 'CHARSET'       => 'UTF-8',
             ];
+            
             if ( !Mail::send($data) ) {
                 throw new Exception('Ошибка при отправке почтового сообщения');
             }

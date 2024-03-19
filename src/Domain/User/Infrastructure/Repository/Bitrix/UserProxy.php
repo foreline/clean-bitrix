@@ -79,10 +79,13 @@
             
             return $data;
         }
-        
+    
         /**
          * @param mixed $obj
          * @return UserInterface
+         * @throws ArgumentException
+         * @throws ObjectPropertyException
+         * @throws SystemException
          */
         public function objectToEntity(mixed $obj): UserInterface
         {

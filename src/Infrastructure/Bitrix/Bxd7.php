@@ -492,9 +492,9 @@
                 $this->count = $this->result->getCount();
                 $this->selectedRowsCount = $this->result->getSelectedRowsCount();
                 
-            } catch (ArgumentException $e) {
+            } catch (ArgumentException|ObjectPropertyException $e) {
                 throw new InvalidArgumentException($e->getMessage(), $e->getCode(), $e->getPrevious());
-            } catch (SystemException|ObjectPropertyException $e) {
+            } catch (SystemException $e) {
                 throw new RuntimeException($e->getMessage(), $e->getCode(), $e->getPrevious());
             }
             
