@@ -56,7 +56,21 @@
                 $res = CIBlockProperty::GetList(false, ['IBLOCK_ID' => $iblockId, 'CODE' => $propertyData['CODE']]);
                 
                 if ( 'E' === $propertyData['PROPERTY_TYPE'] && !empty($propertyData['XML_ID']) ) {
-                    $linkIblockId = self::getIblockByCode((string)$propertyData['XML_ID'])['ID'];
+    
+                    try {
+                        $linkIblockId = self::getIblockByCode((string)$propertyData['XML_ID'])['ID'];
+                    } catch ( NotFoundException $e ) {
+                        $linkIblockFilePath = str_replace(
+                            pathinfo($filePath)['filename'],
+                            (string)$propertyData['XML_ID'],
+                            $filePath
+                        );
+                        // Создаем (загружаем) зависимый инфоблок
+                        self::load($linkIblockFilePath);
+                        // Повторно пытаемся определить ID зависимого инфоблока
+                        $linkIblockId = self::getIblockByCode((string)$propertyData['XML_ID'])['ID'];
+                    }
+                    
                     $propertyData['LINK_IBLOCK_ID'] = (int)$linkIblockId;
                 }
                 
