@@ -1345,4 +1345,28 @@
         }
         
         abstract public function objectToEntity(mixed $obj): ?AggregateInterface;
+    
+        /**
+         * Проверка существование свойства инфоблока
+         * @param string $propertyName
+         * @return bool
+         * @throws ArgumentException
+         * @throws ObjectPropertyException
+         * @throws SystemException
+         */
+        public function propertyExists(string $propertyName): bool
+        {
+            $resource = PropertyTable::getList([
+                'filter' => [
+                    'IBLOCK_ID' => $this->getIblockId(),
+                    'CODE'      => $propertyName
+                ]
+            ]);
+        
+            if ( !$resource->fetch() ) {
+                return false;
+            }
+        
+            return true;
+        }
     }

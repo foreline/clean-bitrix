@@ -36,6 +36,8 @@
             
             $iblockData = json_decode($iblockJson, true);
             
+            unset($iblockData['ID']);
+            
             // Create Iblock
             $iblock = new CIBlock();
             
@@ -49,6 +51,8 @@
             
             // Create Iblock Properties
             foreach ( $iblockData['PROPERTIES'] as $propertyData ) {
+                unset($propertyData['ID']);
+                
                 $propertyData['IBLOCK_ID'] = $iblockId;
                 
                 $iblockProperty = new CIBlockProperty();
@@ -56,7 +60,7 @@
                 $res = CIBlockProperty::GetList(false, ['IBLOCK_ID' => $iblockId, 'CODE' => $propertyData['CODE']]);
                 
                 if ( 'E' === $propertyData['PROPERTY_TYPE'] && !empty($propertyData['XML_ID']) ) {
-    
+                    
                     try {
                         $linkIblockId = self::getIblockByCode((string)$propertyData['XML_ID'])['ID'];
                     } catch ( NotFoundException $e ) {
@@ -195,12 +199,8 @@
                 'select' => ['*'],
             ]);
             
-            if ( !$res ) {
+            if ( !$iblock = $res?->fetch() ) {
                 throw new NotFoundException('Iblock with code "' . $iblockCode . '" not found');
-            }
-            
-            if ( !$iblock = $res->fetch() ) {
-                throw new Exception('Iblock with code "' . $iblockCode . '" couldnot be fetched');
             }
             
             return $iblock;
