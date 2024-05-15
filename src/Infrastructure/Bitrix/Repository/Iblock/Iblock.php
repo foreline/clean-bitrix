@@ -7,6 +7,7 @@
     use Bitrix\Iblock\PropertyTable;
     use Bitrix\Main\ArgumentException;
     use Bitrix\Main\ObjectPropertyException;
+    use Bitrix\Main\Sms\Message;
     use Bitrix\Main\SystemException;
     use CIBlock;
     use CIBlockProperty;
@@ -135,6 +136,10 @@
             while ( $property = $propertiesRes->fetch() ) {
                 
                 if ( 'E' === $property['PROPERTY_TYPE'] ) {
+                    
+                    Assert::notEmpty($property['LINK_IBLOCK_ID'], 'LINK_IBLOCK_ID of property "' . $property['CODE'] . '" is empty');
+                    Assert::greaterThan((int)$property['LINK_IBLOCK_ID'], 0, 'LINK_IBLOCK_ID of property "' . $property['CODE'] . '" must be greater than 0');
+                    
                     $propertyIblockCode = self::getIblockCode((int)$property['LINK_IBLOCK_ID']);
                     $property['XML_ID'] = $propertyIblockCode;
                 }
