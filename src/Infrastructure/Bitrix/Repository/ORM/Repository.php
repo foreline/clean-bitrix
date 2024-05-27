@@ -46,8 +46,19 @@
                     ];
                 }
             }
+    
+            $lim = (int) ( $limit['page_size'] ?: $limit['limit']);
+    
+            if ( 0 < $lim ) {
+                $params['limit'] = $lim;
         
-            $params['limit'] = $limit;
+                if ( 0 < (int)$limit['page_num'] ) {
+                    $params['offset'] = (int)$limit['limit'] * ( (int)$limit['page_num'] - 1 );
+                } elseif ( 0 < (int)$limit['offset'] ) {
+                    $params['offset'] = (int)$limit['offset'];
+                }
+            }
+            
             $params['select'] = ['*'];
         
             return $params;
