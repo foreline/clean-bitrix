@@ -58,8 +58,11 @@
                     $params['offset'] = (int)$limit['offset'];
                 }
             }
-            
-            $params['select'] = ['*'];
+    
+            if ( empty($fields) ) {
+                $fields = ['*'];
+            }
+            $params['select'] = $fields;
         
             return $params;
         }
