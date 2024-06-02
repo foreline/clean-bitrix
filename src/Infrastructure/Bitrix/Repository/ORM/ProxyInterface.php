@@ -3,6 +3,7 @@
     
     namespace Infrastructure\Bitrix\Repository\ORM;
     
+    use Domain\Aggregate\AggregateInterface;
     use Domain\Entity\EntityInterface;
 
     /**
@@ -26,10 +27,9 @@
         public function __construct();
         
         /**
-         * Преобразует сущность в массив для сохранения в БД
-         * @return array $data
+         * Преобразует сущность в объект ORM
          */
-        public function entityToArray(): array;
+        public function entityToOrmObject(EntityInterface $entity);
     
         /**
          * Преобразует объект, полученный из ORM в сущность
