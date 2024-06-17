@@ -8,16 +8,18 @@
     use Bitrix\Main\DB\Result;
     use Bitrix\Main\DB\SqlQueryException;
     use Bitrix\Main\Entity\Base;
-    use Bitrix\Main\Entity\DataManager;
+    use Bitrix\Main\ORM\Data\DataManager;
     use Bitrix\Main\SystemException;
     use Exception;
-
+    
     /**
      * Should be extended by EntityTable classes
      *
      */
     class OrmDataManager extends DataManager
     {
+        public static string $entityTableClass;
+        
         /**
          * @throws SqlQueryException
          * @throws SystemException
@@ -32,12 +34,17 @@
         /**
          * Creates and modifies DB table
          * @return void
+         * @throws ArgumentException
+         * @throws SqlQueryException
+         * @throws SystemException
+         * @throws Exception
          */
         public static function checkTable(): void
         {
-        
+            self::createTable();
+            self::updateTable();
         }
-    
+        
         /**
          * Created database table
          * @throws Exception
@@ -45,13 +52,13 @@
         public static function createTable(): void
         {
             $connectionName = self::getConnectionName();
-            $tableName = Base::getInstance(self::class)->getDBTableName();
-    
+            $tableName = Base::getInstance(self::$entityTableClass)->getDBTableName();
+            
             if ( !Application::getConnection($connectionName)->isTableExists($tableName) ) {
-                Base::getInstance(self::class)->createDbTable();
+                Base::getInstance(self::$entityTableClass)->createDbTable();
             }
         }
-    
+        
         /**
          * @return void
          * @throws SqlQueryException
@@ -60,30 +67,30 @@
          */
         public static function updateTable(): void
         {
-            $scalarFields = Base::getInstance(self::class)->getScalarFields();
-        
+            $scalarFields = Base::getInstance(self::$entityTableClass)->getScalarFields();
+            
             $connection = Application::getConnection();
-            $result = $connection->query('DESCRIBE `' . self::getTableName() . '`');
-        
+            $result = $connection->query('DESCRIBE `' . static::getTableName() . '`');
+            
             $actualFields = [];
-        
+            
             while ( $tableField = $result->fetch() ) {
                 $actualFields[$tableField['Field']] = $tableField;
             }
-        
-            $base = Base::getInstance(self::class);
+            
+            $base = Base::getInstance(self::$entityTableClass);
             $connection = $base->getConnection();
-        
+            
             foreach ( $scalarFields as $fieldName => $field ) {
                 if ( !array_key_exists($fieldName, $actualFields) ) {
-                
+                    
                     $sqlField = $connection->getSqlHelper()->quote($fieldName)
                         . ' ' . $connection->getSqlHelper()->getColumnTypeByField($field)
                         . ($field->isNullable() ? '' : ' NOT NULL')
                     ;
-                
-                    $sqlField = 'ALTER TABLE `' . self::getTableName() . '` ADD ' . $sqlField;
-                
+                    
+                    $sqlField = 'ALTER TABLE `' . static::getTableName() . '` ADD ' . $sqlField;
+                    
                     $connection->query($sqlField);
                 }
             }
