@@ -1,14 +1,17 @@
-<?php
+<?php /** @noinspection SqlNoDataSourceInspection */
     declare(strict_types=1);
     
     namespace Infrastructure\Bitrix\Repository\ORM;
     
     use Bitrix\Main\Application;
     use Bitrix\Main\ArgumentException;
+    use Bitrix\Main\DB\Connection;
     use Bitrix\Main\DB\Result;
     use Bitrix\Main\DB\SqlQueryException;
     use Bitrix\Main\Entity\Base;
+    use Bitrix\Main\Entity\TextField;
     use Bitrix\Main\ORM\Data\DataManager;
+    use Bitrix\Main\ORM\Fields\StringField;
     use Bitrix\Main\SystemException;
     use Exception;
     
@@ -81,18 +84,88 @@
             $base = Base::getInstance(self::$entityTableClass);
             $connection = $base->getConnection();
             
-            foreach ( $scalarFields as $fieldName => $field ) {
-                if ( !array_key_exists($fieldName, $actualFields) ) {
-                    
-                    $sqlField = $connection->getSqlHelper()->quote($fieldName)
-                        . ' ' . $connection->getSqlHelper()->getColumnTypeByField($field)
-                        . ($field->isNullable() ? '' : ' NOT NULL')
-                    ;
-                    
-                    $sqlField = 'ALTER TABLE `' . static::getTableName() . '` ADD ' . $sqlField;
-                    
+            foreach ( $scalarFields as $field ) {
+                self::addField($field, $actualFields, $connection);
+                self::alterField($field, $actualFields, $connection);
+            }
+    
+            foreach ( $actualFields as $actualField ) {
+                self::deleteField($actualField, $scalarFields, $connection);
+            }
+        }
+        
+        /**
+         * @param mixed $field
+         * @param Connection $connection
+         * @return string
+         */
+        public static function getSqlField(mixed $field, Connection $connection): string
+        {
+            return $connection->getSqlHelper()->quote($field->getName())
+                . ' ' . $connection->getSqlHelper()->getColumnTypeByField($field)
+                . ($field->isNullable() ? '' : ' NOT NULL')
+                ;
+        }
+        
+        /**
+         * @param mixed $field
+         * @param array $actualFields
+         * @param Connection $connection
+         * @return void
+         * @throws SqlQueryException
+         */
+        public static function addField(mixed $field, array $actualFields, Connection $connection): void
+        {
+            if ( array_key_exists($field->getName(), $actualFields) ) {
+                return;
+            }
+            
+            $sqlField = 'ALTER TABLE `' . static::getTableName() . '` ADD ' . self::getSqlField($field, $connection);
+            
+            $connection->query($sqlField);
+        }
+    
+        /**
+         * @param mixed $field
+         * @param array $actualFields
+         * @param Connection $connection
+         * @return void
+         * @throws SqlQueryException
+         */
+        public static function alterField(mixed $field, array $actualFields, Connection $connection): void
+        {
+            if ( $field instanceof TextField ) {
+                if ( 'text' !== $actualFields[$field->getName()]['Type'] ) {
+                    $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY ' . self::getSqlField($field, $connection);
                     $connection->query($sqlField);
                 }
             }
+            
+            if ( $field instanceof StringField ) {
+                if ( 'varchar(255)' !== $actualFields[$field->getName()]['Type'] ) {
+                    $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY ' . self::getSqlField($field, $connection);
+                    $connection->query($sqlField);
+                }
+            }
+            
+            // @todo for other Fields
+            
+        }
+    
+        /**
+         * @param array $actualField
+         * @param mixed $scalarFields
+         * @param Connection $connection
+         * @return void
+         * @throws SqlQueryException
+         */
+        public static function deleteField(array $actualField, mixed $scalarFields, Connection $connection): void
+        {
+            if ( array_key_exists($actualField['Field'], $scalarFields) ) {
+                return;
+            }
+        
+            $sqlField = 'ALTER TABLE `' . static::getTableName() . '` DROP IF EXISTS `' . $actualField['Field'] . '`';
+            $connection->query($sqlField);
         }
     }

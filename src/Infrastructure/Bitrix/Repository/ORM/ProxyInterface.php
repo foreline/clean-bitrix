@@ -17,9 +17,9 @@
         public const CODE = 'code';
         public const ACTIVE = 'active';
         public const CREATED_BY = 'created_by';
-        public const DATE_CREATED = 'date_create';
+        public const DATE_CREATED = 'date_created';
         public const MODIFIED_BY = 'modified_by';
-        public const DATE_MODIFIED = 'timestamp_x';
+        public const DATE_MODIFIED = 'date_modified';
     
         /**
          * 
