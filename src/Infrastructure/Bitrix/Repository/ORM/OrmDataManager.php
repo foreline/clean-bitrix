@@ -165,7 +165,7 @@
                 return;
             }
         
-            $sqlField = 'ALTER TABLE `' . static::getTableName() . '` DROP IF EXISTS `' . $actualField['Field'] . '`';
+            $sqlField = 'ALTER TABLE `' . static::getTableName() . '` DROP `' . $actualField['Field'] . '`';
             $connection->query($sqlField);
         }
     }
