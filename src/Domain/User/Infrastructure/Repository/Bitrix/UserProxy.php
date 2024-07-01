@@ -19,7 +19,7 @@
      */
     class UserProxy
     {
-        public const ID = 'id';
+        /*public const ID = 'id';
         public const LOGIN = 'login';
         public const EMAIL = 'email';
         public const PASSWORD = 'password';
@@ -31,7 +31,7 @@
         public const DEPARTMENT = 'work_department';
         public const POSITION = 'work_position';
         public const GROUPS = 'group_id';
-        public const CONFIRM_CODE = 'confirm_code';
+        public const CONFIRM_CODE = 'confirm_code';*/
         
         /**
          * Конвертирует сущность в массив для сохранения в БД

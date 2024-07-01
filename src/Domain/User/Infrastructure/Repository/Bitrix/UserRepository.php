@@ -6,6 +6,7 @@
     use Bitrix\Main\DB\Result;
     use Bitrix\Main\Engine\CurrentUser;
     use Bitrix\Main\Entity\ExpressionField;
+    use Bitrix\Main\ObjectPropertyException;
     use Bitrix\Main\UserTable;
     use CUser;
     use Domain\User\Aggregate\User;
@@ -180,9 +181,10 @@
             
             return $users;
         }
-        
+    
         /**
          * @return UserInterface|null
+         * @throws Exception
          */
         public function fetchObject(): ?UserInterface
         {
@@ -330,5 +332,22 @@
         {
             // @fixme переделать проверку
             return 0 < CurrentUser::get()->getId();
+        }
+    
+        /**
+         * @return int
+         * @throws ObjectPropertyException
+         */
+        public function getCount(): int
+        {
+            return $this->result->getCount();
+        }
+    
+        /**
+         * @return int
+         */
+        public function getTotalCount(): int
+        {
+            return $this->result->getSelectedRowsCount();
         }
     }
