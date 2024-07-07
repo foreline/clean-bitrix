@@ -2,7 +2,7 @@
     declare(strict_types=1);
     
     namespace Infrastructure\Bitrix;
-
+    
     use Bitrix\Iblock\Model\Section;
     use Bitrix\Iblock\SectionTable;
     use Bitrix\Main\DB\Result;
@@ -12,7 +12,7 @@
     use Exception;
     use InvalidArgumentException;
     use RuntimeException;
-
+    
     /**
      * Класс для работы с разделами инфоблоков 2.0 Битрикс на D7 ORM.
      */
@@ -54,10 +54,10 @@
             
             // Сортировка
             if ( 0 < count($sort) ) {
-    
+                
                 $sort = array_change_key_case($sort, CASE_UPPER);
                 $params['order'] = $sort;
-    
+                
                 if ( array_key_exists('RAND', $sort) ) {
                     // @fixme переделать на registerRuntimeField
                     //$query->registerRuntimeField('RAND', ['reference' => 'RAND()']);
@@ -70,7 +70,7 @@
             
             // Ограничение выборки
             $limit = (int) ( $limits['page_size'] ?: $limits['limit']);
-    
+            
             if ( 0 < $limit ) {
                 $params['limit'] = $limit;
                 if ( 0 < (int)$limits['page_num'] ) {
@@ -87,7 +87,7 @@
             
             //$this->count = $this->result->getCount();
             //$this->getSelectedRowsCount = $this->result->getSelectedRowsCount();
-    
+            
             // Если выбирается только id, то повторный запрос делать не нужно
             if ( 1 === count($fields) && 'id' === mb_strtolower($fields[0]) ) {
                 return $this;
@@ -180,7 +180,7 @@
             if ( !$this->result ) {
                 return null;
             }
-        
+            
             return $this;
         }
         
@@ -243,7 +243,7 @@
             
             $sectionCode = !empty($data['CODE']) ? $data['CODE'] : '';
             //$section->setCode($sectionCode);
-    
+            
             $parentID = !empty($data['PARENT_ID']) && 0 < (int)$data['PARENT_ID'] ? (int)$data['PARENT_ID'] : 0;
             // @fixme
             //$section->setParentSection();
@@ -268,13 +268,13 @@
                 'DESCRIPTION'       => $sectionDescription,
                 'IBLOCK_ID'         => $this->getIblockId(),
             ];
-    
+            
             if ( !$sectionId = $iblockSection->Add($arSectionFields, true, false) ) {
                 throw new RuntimeException('Ошибка при создании категории: ' . $iblockSection->LAST_ERROR);
             }
             
             //$section->save();
-    
+            
             //return $section->getId();
             return $sectionId;
         }
@@ -287,52 +287,51 @@
         public function update(array $data, bool $raiseEvents = true): int
         {
             //$section = SectionTable::wakeUpObject($this->getIblockId());
-    
+            
             $data = array_change_key_case($data, CASE_UPPER);
-    
+            
             //$section = SectionTable::wakeUpObject((int)$data['ID']);
             //$section = SectionTable::getByPrimary((int)$data['ID'])?->fetchObject();
             
             $sectionName = !empty($data['NAME']) ? $data['NAME'] : '';
-    
+            
             if ( empty($sectionName) ) {
                 throw new InvalidArgumentException('Не задано название раздела');
             }
             //$section->setName($sectionName);
-    
+            
             $sectionCode = !empty($data['CODE']) ? $data['CODE'] : '';
             //$section->setCode($sectionCode);
             
-            // @fixme refactor rename to $parentId
-            $parentID = !empty($data['PARENT_ID']) && 0 < (int)$data['PARENT_ID'] ? (int)$data['PARENT_ID'] : 0;
+            $parentId = !empty($data['IBLOCK_SECTION_ID']) && 0 < (int)$data['IBLOCK_SECTION_ID'] ? (int)$data['IBLOCK_SECTION_ID'] : 0;
             // @fixme
-            //$section->setParentSection($parentID);
-    
+            //$section->setParentSection($parentId);
+            
             $sectionDescription = !empty($data['DESCRIPTION']) ? $data['DESCRIPTION'] : '';
             //$section->setDescription($sectionDescription);
-    
+            
             $sectionActive = !empty($data['ACTIVE']) && in_array($data['ACTIVE'], ['on', 'Y']) ? 'Y' : 'N';
             //$section->setActive($sectionActive); // @fixme
-    
+            
             $sectionSort = !empty($data['SORT']) && 0 < (int)$data['SORT'] ? (int)$data['SORT'] : 0;
             //$section->setSort($sectionSort);
-    
+            
             $iblockSection = new CIBlockSection();
-    
+            
             $arSectionFields = [
                 'NAME'              => $sectionName,
                 'CODE'              => $sectionCode,
                 'ACTIVE'            => $sectionActive,
                 'SORT'              => $sectionSort,
-                'IBLOCK_SECTION_ID' => $parentID,
+                'IBLOCK_SECTION_ID' => $parentId,
                 'DESCRIPTION'       => $sectionDescription,
                 'IBLOCK_ID'         => $this->getIblockId(),
             ];
-    
+            
             if ( !$iblockSection->Update($data['ID'], $arSectionFields, true, false) ) {
                 throw new RuntimeException('Ошибка при изменении категории: ' . $iblockSection->LAST_ERROR);
             }
-    
+            
             //$section->save();
             
             //$obj = $section::getByPrimary((int)$data['ID'])->fetchObject();
@@ -341,11 +340,11 @@
             //$sysEntity->cleanCache();
             
             SectionTable::cleanCache();
-    
+            
             //return $section->getId();
             return (int)$data['ID'];
         }
-    
+        
         /**
          * @param int $id
          * @return bool
