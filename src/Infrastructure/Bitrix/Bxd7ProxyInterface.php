@@ -10,7 +10,7 @@
      */
     interface Bxd7ProxyInterface
     {
-        public const ID = 'id';
+        /*public const ID = 'id';
         public const NAME = 'name';
         public const SORT = 'sort';
         public const CODE = 'code';
@@ -18,7 +18,7 @@
         public const CREATED_BY = 'created_by';
         public const DATE_CREATED = 'date_create';
         public const MODIFIED_BY = 'modified_by';
-        public const DATE_MODIFIED = 'timestamp_x';
+        public const DATE_MODIFIED = 'timestamp_x';*/
         
         public function __construct();
         /**
