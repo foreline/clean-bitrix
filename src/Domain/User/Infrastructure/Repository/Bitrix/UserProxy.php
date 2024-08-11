@@ -20,20 +20,6 @@
      */
     class UserProxy
     {
-        /*public const ID = 'id';
-        public const LOGIN = 'login';
-        public const EMAIL = 'email';
-        public const PASSWORD = 'password';
-        public const CONFIRM_PASSWORD = 'confirm_password';
-        public const NAME = 'name';
-        public const LAST_NAME = 'last_name';
-        public const ACTIVE = 'active';
-        public const PHONE = 'personal_phone';
-        public const DEPARTMENT = 'work_department';
-        public const POSITION = 'work_position';
-        public const GROUPS = 'group_id';
-        public const CONFIRM_CODE = 'confirm_code';*/
-        
         /**
          * Конвертирует сущность в массив для сохранения в БД
          * @param UserInterface|User $user
@@ -43,16 +29,16 @@
         public function entityToArray(UserInterface|User $user): array
         {
             $data = [
-                UserRepositoryInterface::ID        => $user->getId(),
-                UserRepositoryInterface::LOGIN     => $user->getLogin(),
-                UserRepositoryInterface::NAME      => $user->getFirstName(),
-                UserRepositoryInterface::LAST_NAME => $user->getLastName(),
-                UserRepositoryInterface::EMAIL     => $user->getEmail(),
-                UserRepositoryInterface::PHONE     => $user->getPhone(),
-                UserRepositoryInterface::ACTIVE    => ( $user->isActive() ? 'Y' : 'N' ),
-                UserRepositoryInterface::DEPARTMENT   => $user->getDepartment(),
-                UserRepositoryInterface::POSITION     => $user->getPosition(),
-                UserRepositoryInterface::CONFIRM_CODE => $user->getConfirmationCode(),
+                UserRepositoryInterface::ID         => $user->getId(),
+                UserRepositoryInterface::LOGIN      => $user->getLogin(),
+                UserRepositoryInterface::NAME       => $user->getFirstName(),
+                UserRepositoryInterface::LAST_NAME  => $user->getLastName(),
+                UserRepositoryInterface::EMAIL      => $user->getEmail(),
+                UserRepositoryInterface::PHONE      => $user->getPhone(),
+                UserRepositoryInterface::ACTIVE     => ( $user->isActive() ? 'Y' : 'N' ),
+                UserRepositoryInterface::DEPARTMENT     => $user->getDepartment(),
+                UserRepositoryInterface::POSITION       => $user->getPosition(),
+                UserRepositoryInterface::CONFIRM_CODE   => $user->getConfirmationCode(),
                 
                 // @fixme
                 //UserRepositoryInterface::GROUPS => $user->getGroups()?->getIds(),
