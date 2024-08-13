@@ -23,7 +23,7 @@
         /**
          * 
          */
-        public function __construct();
+        //public function __construct();
         
         /**
          * Преобразует сущность в объект ORM
