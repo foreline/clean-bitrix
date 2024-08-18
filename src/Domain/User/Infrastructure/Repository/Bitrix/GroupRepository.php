@@ -8,6 +8,7 @@
     use Domain\User\Aggregate\GroupCollection;
     use Domain\User\Entity\GroupEntity;
     use Domain\User\Infrastructure\Repository\GroupRepositoryInterface;
+    use ReflectionClass;
 
     /**
      *
@@ -15,6 +16,16 @@
     class GroupRepository extends GroupProxy implements GroupRepositoryInterface
     {
         protected $res = null;
+    
+        /**
+         * Returns class constants
+         * @return array<string, string>
+         */
+        public static function getFields(): array
+        {
+            $reflection = new ReflectionClass(__CLASS__);
+            return $reflection->getConstants();
+        }
     
         /**
          * @param GroupEntity $group

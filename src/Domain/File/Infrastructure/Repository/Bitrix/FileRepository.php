@@ -12,7 +12,8 @@
     use Domain\File\Aggregate\FileCollection;
     use Domain\File\Infrastructure\Repository\FileRepositoryInterface;
     use Exception;
-    
+    use ReflectionClass;
+
     /**
      * File Repository
      */
@@ -30,6 +31,16 @@
         public function __construct()
         {
             $this->uploadDir = COption::GetOptionString('main', 'upload_dir', 'upload');
+        }
+    
+        /**
+         * Returns class constants
+         * @return array<string, string>
+         */
+        public static function getFields(): array
+        {
+            $reflection = new ReflectionClass(__CLASS__);
+            return $reflection->getConstants();
         }
         
         /**

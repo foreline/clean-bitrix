@@ -15,6 +15,7 @@
     use Domain\User\Aggregate\UsersInterface;
     use Domain\User\Infrastructure\Repository\UserRepositoryInterface;
     use Exception;
+    use ReflectionClass;
     use RuntimeException;
     
     /**
@@ -33,6 +34,16 @@
         public function __construct()
         {
         
+        }
+    
+        /**
+         * Returns class constants
+         * @return array<string, string>
+         */
+        public static function getFields(): array
+        {
+            $reflection = new ReflectionClass(__CLASS__);
+            return $reflection->getConstants();
         }
         
         /**
