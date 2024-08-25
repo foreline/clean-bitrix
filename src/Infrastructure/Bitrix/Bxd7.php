@@ -26,6 +26,7 @@ use CIBlock;
 use CIBlockElement;
 use CIBlockPropertyEnum;
 use Domain\Aggregate\AggregateInterface;
+use Domain\Exception\NotFoundException;
 use Exception;
 use InvalidArgumentException;
 use RuntimeException;
@@ -294,10 +295,19 @@ abstract class Bxd7
     private function createIblock(): Iblock
     {
         // @fixme select default site
-        $siteId = IblockSiteTable::getList()
+        /*$siteId = IblockSiteTable::getList()
+            ?->fetchObject()
+            ?->get('site_id')
+        ;*/
+        
+        $siteId = \Bitrix\Main\SiteTable::getList()
             ->fetchObject()
-            ->get('site_id')
+            ?->get('LID')
         ;
+        
+        if ( !$siteId ) {
+            throw new NotFoundException('Сайт (SITE_ID) не найден');
+        }
         
         $fields = [
             'name'  => $this->getIblockCode(), // @fixme
@@ -318,6 +328,7 @@ abstract class Bxd7
         ]);*/
         
         $iblock = new CIBlock();
+        
         if ( !$iblockId = $iblock->Add(array_change_key_case($fields, CASE_UPPER)) ) {
             throw new Exception('Ошибка при создании инфоблока:' . $iblock->LAST_ERROR);
         }

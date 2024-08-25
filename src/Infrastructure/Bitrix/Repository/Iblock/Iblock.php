@@ -34,6 +34,16 @@ class Iblock
         $iblockData = json_decode($iblockJson, true);
         
         unset($iblockData['ID']);
+    
+        $siteId = \Bitrix\Main\SiteTable::getList()
+            ->fetchObject()
+            ?->get('LID')
+        ;
+    
+        if ( !$siteId ) {
+            throw new NotFoundException('Site (SITE_ID) not found.');
+        }
+        $iblockData['LID'] = $siteId;
         
         // Create Iblock
         $iblock = new CIBlock();

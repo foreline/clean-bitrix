@@ -96,6 +96,7 @@ abstract class BxIblockSection extends Bxd7
         $sectionsId = $this->result->fetchAll();
         
         $select = $this->prepareSelect($select);
+        //$select[] = 'UF_*';
         
         // @fixme duplicate sections
         $options = array_change_key_case($options);
@@ -244,7 +245,7 @@ abstract class BxIblockSection extends Bxd7
         $sectionCode = !empty($data['CODE']) ? $data['CODE'] : '';
         //$section->setCode($sectionCode);
         
-        $parentID = !empty($data['PARENT_ID']) && 0 < (int)$data['PARENT_ID'] ? (int)$data['PARENT_ID'] : 0;
+        $parentId = !empty($data['PARENT_ID']) && 0 < (int)$data['PARENT_ID'] ? (int)$data['PARENT_ID'] : 0;
         // @fixme
         //$section->setParentSection();
         
@@ -264,10 +265,19 @@ abstract class BxIblockSection extends Bxd7
             'CODE'              => $sectionCode,
             'ACTIVE'            => $sectionActive,
             'SORT'              => $sectionSort,
-            'IBLOCK_SECTION_ID' => $parentID,
+            'IBLOCK_SECTION_ID' => $parentId,
             'DESCRIPTION'       => $sectionDescription,
             'IBLOCK_ID'         => $this->getIblockId(),
         ];
+        
+        foreach ( $data as $key => $value ) {
+            $key = mb_strtoupper($key);
+            if ( !str_starts_with($key, 'UF_') ) {
+                continue;
+            }
+            
+            $arSectionFields[$key] = $value;
+        }
         
         if ( !$sectionId = $iblockSection->Add($arSectionFields, true, false) ) {
             throw new RuntimeException('Ошибка при создании категории: ' . $iblockSection->LAST_ERROR);

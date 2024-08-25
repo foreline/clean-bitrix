@@ -18,10 +18,13 @@ class FileProxy
     public function objectToEntity(mixed $obj): File
     {
         $file = new File();
+        
         $file
             ->setId((int)$obj->get(FileRepositoryInterface::ID))
             ->setFileName((string)$obj->get(FileRepositoryInterface::NAME))
-            ->setOriginalName((string)$obj->get(FileRepositoryInterface::ORIGINAL_NAME));
+            ->setOriginalName((string)$obj->get(FileRepositoryInterface::ORIGINAL_NAME))
+        ;
+        
         return $file;
     }
     
@@ -31,6 +34,8 @@ class FileProxy
      */
     public function arrayToEntity(array $data): File
     {
+        $data = array_change_key_case($data, CASE_LOWER);
+        
         $file = new File();
         
         if ( array_key_exists(FileRepositoryInterface::ID, $data) ) {
@@ -45,8 +50,8 @@ class FileProxy
         if ( array_key_exists(FileRepositoryInterface::ORIGINAL_NAME, $data) ) {
             $file->setOriginalName((string)$data[FileRepositoryInterface::ORIGINAL_NAME]);
         }
-        if ( !empty($data['SUBDIR']) ) {
-            $source = '/' . $this->getUploadDir() . '/' . $data['SUBDIR'] . '/' . $file->getFileName();
+        if ( !empty($data['subdir']) ) {
+            $source = '/' . $this->getUploadDir() . '/' . $data['subdir'] . '/' . $file->getFileName();
             $file->setSource($source);
             $file->setPath($_SERVER['DOCUMENT_ROOT'] . '/' . $file->getSource());
         }
