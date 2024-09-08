@@ -69,7 +69,13 @@ abstract class BxIblockSection extends Bxd7
         }
         
         // Ограничение выборки
-        $limit = (int) ( $limits['page_size'] ?: $limits['limit']);
+        $limit = 0;
+    
+        if ( array_key_exists('page_size', $limits) ) {
+            $limit = (int) $limits['page_size'];
+        } elseif ( array_key_exists('limit', $limits) ) {
+            $limit = (int) $limits['limit'];
+        }
         
         if ( 0 < $limit ) {
             $params['limit'] = $limit;
