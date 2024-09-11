@@ -40,8 +40,8 @@ class Repository
             //$sort = array_change_key_case($sort, CASE_LOWER);
             //$sort = array_change_key_case($sort, CASE_UPPER);
             $params['order'] = $sort;
-            
-            if ( array_key_exists('RAND', $sort) ) {
+    
+            if ( array_key_exists('rand', $sort) || array_key_exists('RAND', $sort) ) {
                 $params['cache']['ttl'] = 0; // Иначе ORM кеширует запрос
                 $params['runtime'] = [
                     new ExpressionField('RAND', 'RAND()')
@@ -82,6 +82,7 @@ class Repository
             
             if ( 'condition' === $key ) {
                 
+                // @fixme
                 $query = \Bitrix\Main\Entity\Query::filter()
                     ->logic($value['LOGIC'])
                     ->where([
