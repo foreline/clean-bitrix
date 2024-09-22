@@ -9,11 +9,16 @@ use Bitrix\Main\Entity\ExpressionField;
 use Bitrix\Main\ObjectPropertyException;
 use Bitrix\Main\UserTable;
 use CUser;
+use Domain\UseCase\ServiceInterface;
 use Domain\User\Aggregate\User;
 use Domain\User\Aggregate\UserInterface;
 use Domain\User\Aggregate\UserCollection;
 use Domain\User\Aggregate\UsersInterface;
+use Domain\User\Infrastructure\Repository\UserFields;
+use Domain\User\Infrastructure\Repository\UserFilter;
+use Domain\User\Infrastructure\Repository\UserLimit;
 use Domain\User\Infrastructure\Repository\UserRepositoryInterface;
+use Domain\User\Infrastructure\Repository\UserSort;
 use Exception;
 use ReflectionClass;
 use RuntimeException;
@@ -28,12 +33,20 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
     
     protected ?Result $result = null;
     
+    private UserFilter $filter;
+    private UserFields $fields;
+    private UserLimit $limit;
+    private UserSort $sort;
+    
     /**
      *
      */
-    public function __construct()
+    public function __construct(?ServiceInterface $service = null)
     {
-    
+        $this->sort = new UserSort($service);
+        $this->filter = new UserFilter($service);
+        $this->limit = new UserLimit($service);
+        $this->fields = new UserFields($service);
     }
 
     /**
@@ -147,11 +160,10 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
     
     /**
      * @param int|null $id
-     * @param array $fields
      * @return ?UserInterface
      * @throws Exception
      */
-    public function findById(int $id = null, array $fields = []): ?UserInterface
+    public function findById(int $id = null): ?UserInterface
     {
         if ( 0 >= $id ) {
             return null;
@@ -161,21 +173,23 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
             throw new InvalidArgumentException('Не задан ID пользователя');
         }*/
         
-        return self::$cache[$id] ?: $this->find(filter: ['=id' => $id], fields: $fields)?->current();
+        $this->filter->filterById($id);
+        
+        return self::$cache[$id] ?: $this->find()?->current();
     }
     
     /**
-     * @param array $filter
-     * @param array $sort
-     * @param array $limit
-     * @param array $fields
      * @return ?UsersInterface
      * @throws Exception
-     * @noinspection PhpTooManyParametersInspection
      */
-    public function find(array $filter = [], array $sort = [], array $limit = [], array $fields = []): ?UsersInterface
+    public function find(): ?UsersInterface
     {
-        if ( !$this->query($filter, $sort, $limit, $fields) ) {
+        if ( !$this->query(
+            $this->filter->get(),
+            $this->sort->get(),
+            $this->limit->getLimits(),
+            $this->fields->get()
+        ) ) {
             return null;
         }
         
