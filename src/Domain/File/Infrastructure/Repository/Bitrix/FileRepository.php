@@ -6,12 +6,16 @@ namespace Domain\File\Infrastructure\Repository\Bitrix;
 use Bitrix\Main\DB\Result;
 use Bitrix\Main\Entity\ExpressionField;
 use Bitrix\Main\FileTable;
-use Bitrix\Main\ObjectPropertyException;
 use CFile;
 use COption;
 use Domain\File\Aggregate\File;
 use Domain\File\Aggregate\FileCollection;
+use Domain\File\Infrastructure\Repository\FileFields;
+use Domain\File\Infrastructure\Repository\FileFilter;
+use Domain\File\Infrastructure\Repository\FileLimit;
 use Domain\File\Infrastructure\Repository\FileRepositoryInterface;
+use Domain\File\Infrastructure\Repository\FileSort;
+use Domain\UseCase\ServiceInterface;
 use Exception;
 use ReflectionClass;
 
@@ -26,12 +30,22 @@ class FileRepository extends FileProxy implements FileRepositoryInterface
     /** @var string  */
     private string $uploadDir;
     
+    public FileFilter $filter;
+    public FileFields $fields;
+    public FileLimit $limit;
+    public FileSort $sort;
+    
     /**
      *
      */
-    public function __construct()
+    public function __construct(?ServiceInterface $service = null)
     {
         $this->uploadDir = COption::GetOptionString('main', 'upload_dir', 'upload');
+        
+        $this->sort     = new FileSort($service);
+        $this->filter   = new FileFilter($service);
+        $this->limit    = new FileLimit($service);
+        $this->fields   = new FileFields($service);
     }
 
     /**
