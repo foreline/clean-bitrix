@@ -33,10 +33,10 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
     
     protected ?Result $result = null;
     
-    private UserFilter $filter;
-    private UserFields $fields;
-    private UserLimit $limit;
-    private UserSort $sort;
+    public UserFilter $filter;
+    public UserFields $fields;
+    public UserLimit $limit;
+    public UserSort $sort;
     
     /**
      *
