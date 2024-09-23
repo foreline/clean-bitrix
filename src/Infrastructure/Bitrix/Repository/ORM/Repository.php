@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Infrastructure\Bitrix\Repository\ORM;
 
-use App\Servicedesk\Location\Infrastructure\Repository\Bitrix\ORM\LocationTable;
 use Bitrix\Main\ArgumentException;
 use Bitrix\Main\DB\Result;
 use Bitrix\Main\ORM\Fields\ExpressionField;
@@ -21,7 +20,6 @@ class Repository
      * @param iterable $limit
      * @param iterable $fields
      * @return array
-     * @throws ArgumentException
      * @noinspection PhpTooManyParametersInspection
      */
     public function getParams(iterable $filter = [], iterable $sort = [], iterable $limit = [], iterable $fields = []): array
@@ -40,7 +38,7 @@ class Repository
             //$sort = array_change_key_case($sort, CASE_LOWER);
             //$sort = array_change_key_case($sort, CASE_UPPER);
             $params['order'] = $sort;
-    
+            
             if ( array_key_exists('rand', $sort) || array_key_exists('RAND', $sort) ) {
                 $params['cache']['ttl'] = 0; // Иначе ORM кеширует запрос
                 $params['runtime'] = [
@@ -72,7 +70,6 @@ class Repository
     /**
      * @param iterable $filter
      * @return array
-     * @throws ArgumentException
      */
     private function getFilter(iterable $filter = []): array
     {
@@ -82,15 +79,17 @@ class Repository
             
             if ( 'condition' === $key ) {
                 
-                // @fixme
-                $query = \Bitrix\Main\Entity\Query::filter()
-                    ->logic($value['LOGIC'])
-                    ->where([
-                        ['%name', 'test'],
-                        ['%description', 'test']
-                    ]);
+                $logic = mb_strtoupper($value['LOGIC']);
+                unset($value['LOGIC']);
                 
-                $preparedFilter[] = $query;
+                $cond = [];
+                $cond['LOGIC'] = $logic;
+                
+                foreach ( $value as $k => $v ) {
+                    $cond[$k] = $v;
+                }
+                
+                $preparedFilter[] = $cond;
                 
                 continue;
             }
