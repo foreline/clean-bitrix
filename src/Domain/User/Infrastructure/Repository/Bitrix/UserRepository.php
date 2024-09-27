@@ -9,6 +9,10 @@ use Bitrix\Main\Entity\ExpressionField;
 use Bitrix\Main\ObjectPropertyException;
 use Bitrix\Main\UserTable;
 use CUser;
+use Domain\Repository\FieldsInterface;
+use Domain\Repository\FilterInterface;
+use Domain\Repository\LimitInterface;
+use Domain\Repository\SortInterface;
 use Domain\UseCase\ServiceInterface;
 use Domain\User\Aggregate\User;
 use Domain\User\Aggregate\UserInterface;
@@ -33,10 +37,10 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
     
     protected ?Result $result = null;
     
-    public UserFilter $filter;
-    public UserFields $fields;
-    public UserLimit $limit;
-    public UserSort $sort;
+    public FilterInterface|UserFilter $filter;
+    public FieldsInterface|UserFields $fields;
+    public LimitInterface|UserLimit $limit;
+    public SortInterface|UserSort $sort;
     
     /**
      *
