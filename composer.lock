@@ -8,11 +8,11 @@
     "packages": [
         {
             "name": "foreline/clean",
-            "version": "v0.4.06",
+            "version": "v0.4.08",
             "source": {
                 "type": "git",
                 "url": "https://github.com/foreline/clean.git",
-                "reference": "7374a97e0d1d4fcc638887d680df253379bc0eba"
+                "reference": "25d98a4e05571134797dc03348056fb1cfa2a712"
             },
             "require": {
                 "ext-curl": "*",
@@ -42,7 +42,7 @@
                     "email": "dima@foreline.ru"
                 }
             ],
-            "time": "2024-09-27T13:14:52+00:00"
+            "time": "2024-09-29T09:10:10+00:00"
         },
         {
             "name": "symfony/http-foundation",

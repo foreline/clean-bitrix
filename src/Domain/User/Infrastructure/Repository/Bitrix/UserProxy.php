@@ -20,6 +20,27 @@ use Exception;
  */
 class UserProxy
 {
+    private static ?Role $role = null;
+    
+    /**
+     *
+     */
+    public function __construct()
+    {
+        if ( null === self::$role ) {
+            self::$role = ( new Role() );
+        }
+    }
+    
+    /**
+     * @param Role $role
+     * @return void
+     */
+    public static function registerRoleObject(Role $role)
+    {
+        self::$role = $role;
+    }
+    
     /**
      * Конвертирует сущность в массив для сохранения в БД
      * @param UserInterface|User $user
@@ -66,7 +87,7 @@ class UserProxy
         
         return $data;
     }
-
+    
     /**
      * @param mixed $obj
      * @return UserInterface
@@ -131,7 +152,9 @@ class UserProxy
             
             foreach ( $groups as $group ) {
                 $user->addGroup($group);
-                $user->addRole(new Role($group->getCode()));
+                //$user->addRole(new Role($group->getCode()));
+                $role = new self::$role($group->getCode());
+                $user->addRole($role);
             }
         }
         
@@ -139,7 +162,7 @@ class UserProxy
         
         return $user;
     }
-
+    
     /**
      * @param User $user
      * @param mixed $obj
