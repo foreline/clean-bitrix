@@ -18,6 +18,7 @@ use Bitrix\Main\Engine\CurrentUser;
 use Bitrix\Main\Entity\ExpressionField;
 use Bitrix\Main\Event;
 use Bitrix\Main\Loader;
+use Bitrix\Main\LoaderException;
 use Bitrix\Main\ObjectPropertyException;
 use Bitrix\Main\ORM\Objectify\EntityObject;
 use Bitrix\Main\SystemException;
@@ -158,7 +159,11 @@ abstract class Bxd7
     /**
      * @param array $selectFields Полный набор символьных кодов полей и свойств для выборки
      * @param array $enumProperties Набор символьных кодов свойств типа список
-     * @throws Exception
+     * @param array $fileProperties
+     * @throws NotFoundException
+     * @throws InvalidArgumentException
+     * @throws RuntimeException
+     *
      */
     public function __construct(array $selectFields = ['*'], array $enumProperties = [], array $fileProperties = [])
     {
@@ -180,57 +185,70 @@ abstract class Bxd7
         if ( empty($this->iblockCode) ) {
             throw new InvalidArgumentException('Не задан код информационного блока');
         }
+    
+        try {
+            Loader::includeModule('iblock');
+        } catch (LoaderException $e) {
+            throw new RuntimeException($e->getMessage(), $e->getCode(), $e->getPrevious());
+        }
+    
+        try {
+            $result = IblockTable::getList(
+                [
+                    'filter' => ['=CODE' => $this->iblockCode],
+                    'select' => ['id', 'code', 'name', 'api_code', 'version', 'iblock_type_id', 'list_page_url', 'detail_page_url'],
+                ]
+            );
         
-        Loader::includeModule('iblock');
-        
-        $result = IblockTable::getList(
-            [
-                'filter' => [ '=CODE' => $this->iblockCode ],
-                'select' => [ 'id', 'code', 'name', 'api_code', 'version', 'iblock_type_id', 'list_page_url', 'detail_page_url' ],
-            ]
-        );
-        
-        if ( !$iblock = $result->fetchObject() ) {
-            // Trying to create IBlock
+    
+            if ( !$iblock = $result->fetchObject() ) {
+                // Trying to create IBlock
+                
+                try {
+                    $iblock = $this->createIblock();
+                } catch (Exception $e) {
+                    //throw $e;
+                    throw new NotFoundException(
+                        sprintf('Информационный блок с кодом "%s" не найден', $this->iblockCode)
+                    );
+                }
+            }
             
-            try {
-                $iblock = $this->createIblock();
-            } catch (Exception $e) {
-                throw $e;
-                throw new Exception(
-                    sprintf('Информационный блок с кодом "%s" не найден', $this->iblockCode)
+            if ( empty($iblock->get('api_code')) ) {
+                throw new InvalidArgumentException(
+                    sprintf('Не задан API код для инфоблока "%s"', $iblock->get('NAME'))
                 );
             }
+            
+            // Поддержка только инфоблоков версии 2.0
+            if ( 2 !== (int)$iblock->get('version') ) {
+                throw new RuntimeException(
+                    sprintf('Поддерживаются только инфоблоки 2.0 (код инфоблока: %s)', $iblock->get('CODE'))
+                );
+            }
+            
+            if ( 1 < $result->getSelectedRowsCount() ) {
+                throw new RuntimeException(
+                    sprintf('Найдено несколько инфоблоков с кодом "%s"', $this->iblockCode)
+                );
+            }
+            
+            $this->iblockId = (int)$iblock->get('id');
+            $this->setIblockTypeId((string)$iblock->get('iblock_type_id'));
+            
+            // Свойства и элементы инфоблока
+            $this->fillIblockProperties();
+        } catch (ObjectPropertyException $e) {
+            throw new InvalidArgumentException($e->getMessage(), $e->getCode(), $e->getPrevious());
+        } catch (ArgumentException $e) {
+            throw new InvalidArgumentException($e->getMessage(), $e->getCode(), $e->getPrevious());
+        } catch (SystemException $e) {
+            throw new RuntimeException($e->getMessage(), $e->getCode(), $e->getPrevious());
         }
-        
-        if ( empty($iblock->get('api_code')) ) {
-            throw new Exception(
-                sprintf('Не задан API код для инфоблока "%s"', $iblock->get('NAME'))
-            );
-        }
-        
-        // Поддержка только инфоблоков версии 2.0
-        if ( 2 !== (int)$iblock->get('version') ) {
-            throw new Exception(
-                sprintf('Поддерживаются только инфоблоки 2.0 (код инфоблока: %s)', $iblock->get('CODE'))
-            );
-        }
-        
-        if ( 1 < $result->getSelectedRowsCount() ) {
-            throw new RuntimeException(
-                sprintf('Найдено несколько инфоблоков с кодом "%s"', $this->iblockCode)
-            );
-        }
-        
-        $this->iblockId = (int)$iblock->get('id');
-        $this->setIblockTypeId((string)$iblock->get('iblock_type_id'));
-        
-        // Свойства и элементы инфоблока
-        $this->fillIblockProperties();
     }
     
     /**
-     * @return array
+     * @return void
      * @throws ArgumentException
      * @throws ObjectPropertyException
      * @throws SystemException
@@ -883,50 +901,62 @@ abstract class Bxd7
      * @param array $data
      *
      * @return int
-     * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws RuntimeException
      */
     public function create(array $data): int
     {
-        $data = array_change_key_case($data, CASE_UPPER);
+        try {
+            $data = array_change_key_case($data, CASE_UPPER);
+            
+            $iblock = Iblock::wakeUp($this->iblockId);
+            $entity = $iblock->getEntityDataClass();
+            /** @var EntityObject $obj */
         
-        $iblock = Iblock::wakeUp($this->iblockId);
-        $entity = $iblock->getEntityDataClass();
-        /** @var EntityObject $obj */
-        $obj = $entity::createObject();
+            $obj = $entity::createObject();
         
-        // Save "empty" element, then call update method
-        
-        $obj->set('NAME', $data['NAME']);
-        if ( !isset($data['CREATED_BY']) ) {
-            $obj->set('CREATED_BY', CurrentUser::get()->getId());
-        }
-        $obj->set('MODIFIED_BY', CurrentUser::get()->getId());
-        
-        // @fixme если свойство является обязательным, необходимо его сохранить при создании
-        
-        $result = $obj->save();
-        
-        /*try {
+    
+            // Save "empty" element, then call update method
+            
+            $obj->set('NAME', $data['NAME']);
+            if ( !isset($data['CREATED_BY']) ) {
+                $obj->set('CREATED_BY', CurrentUser::get()->getId());
+            }
+            $obj->set('MODIFIED_BY', CurrentUser::get()->getId());
+            
+            // @fixme если свойство является обязательным, необходимо его сохранить при создании
+            
             $result = $obj->save();
-        } catch (\Bitrix\Main\DB\SqlQueryException $e) {
-            // Trying to create iblock element property
-            $obj;
-        } finally {
-            throw $e;
-        }*/
-        
-        if ( !$result->isSuccess() ) {
-            throw new RuntimeException($result->getErrorMessages()[0]);
+            
+            /*try {
+                $result = $obj->save();
+            } catch (\Bitrix\Main\DB\SqlQueryException $e) {
+                // Trying to create iblock element property
+                $obj;
+            } finally {
+                throw $e;
+            }*/
+            
+            if ( !$result->isSuccess() ) {
+                throw new RuntimeException($result->getErrorMessages()[0]);
+            }
+            
+            $parameters = $data;
+            $parameters['ID'] = $result->getPrimary();
+            $parameters['IBLOCK_ID']    = $this->iblockId;
+            $event = new Event('iblock', 'OnOrmAfterIBlockElementAdd', $parameters);
+            $event->send();
+            
+            $data['ID'] = $result->getId();
+            $this->update($data);
+    
+        } catch (ArgumentException $e) {
+            throw new InvalidArgumentException($e->getMessage(), $e->getCode(), $e->getPrevious());
+        } catch (SystemException $e) {
+            throw new RuntimeException($e->getMessage(), $e->getCode(), $e->getPrevious());
+        } catch (Exception $e) {
+            throw new RuntimeException($e->getMessage(), $e->getCode(), $e->getPrevious());
         }
-        
-        $parameters = $data;
-        $parameters['ID'] = $result->getPrimary();
-        $parameters['IBLOCK_ID']    = $this->iblockId;
-        $event = new Event('iblock', 'OnOrmAfterIBlockElementAdd', $parameters);
-        $event->send();
-        
-        $data['ID'] = $result->getId();
-        $this->update($data);
         
         return $result->getId();
     }
@@ -937,9 +967,9 @@ abstract class Bxd7
      * @param array $data
      * @param bool $raiseEvents Вызывать события Битрикс (OnOrmAfterIBlockElementUpdate)
      * @return int
-     * @throws ArgumentException
-     * @throws SystemException
-     * @throws Exception
+     * @throws InvalidArgumentException
+     * @throws RuntimeException
+     * @throws NotFoundException
      */
     public function update(array $data, bool $raiseEvents = true): int
     {
@@ -950,8 +980,10 @@ abstract class Bxd7
         //$obj = $entity::createObject();
         try {
             if ( !$obj = $entity::getByPrimary((int) $data['ID'])->fetchObject() ) {
-                throw new Exception('Элемент не найден');
+                throw new NotFoundException('Элемент не найден');
             }
+    
+            $sysEntity = $obj->sysGetEntity();
         } catch (ObjectPropertyException $e) {
             throw new RuntimeException($e->getMessage(), $e->getCode(), $e->getPrevious());
         } catch (ArgumentException $e) {
@@ -959,9 +991,7 @@ abstract class Bxd7
         } catch (SystemException $e) {
             throw new RuntimeException($e->getMessage(), $e->getCode(), $e->getPrevious());
         }
-        
-        $sysEntity = $obj->sysGetEntity();
-        
+    
         foreach ( $data as $key => $value ) {
             
             // ID нельзя менять
@@ -977,96 +1007,109 @@ abstract class Bxd7
                 continue;
             }
             
-            // @fixme Ждем пока в iblock ORM добавят поддержку множественных свойств, поэтому пока fallback на \CIBlockElement
-            if ( $sysEntity->getField($key) instanceof PropertyOneToMany ) {
-                
-                // @fixme Удаление множественного свойства типа "Файл"
-                if ( in_array(strtoupper($key), $this->fileProperties) ) {
-                    $propertyId = (int)$sysEntity->getField($key)?->getIblockElementProperty()?->get('ID');
-                    $propertyValues = [];
-                    $storedFilesId = [];
-                    $storedPropertyValuesId = [];
-                    
-                    $res = CIBlockElement::GetProperty($this->iblockId, $obj->get('ID'), 'sort', 'asc', ['CODE' => $key]);
-                    
-                    while ( $arProp = $res->Fetch() ) {
-                        $propertyValueId = $arProp['PROPERTY_VALUE_ID'];
-                        $propertyValue = $arProp['VALUE'];
-                        
-                        $storedFilesId[] = $propertyValue;
-                        $storedPropertyValuesId[$propertyValue] = $propertyValueId;
-                    }
-                    
-                    $storedFilesId = array_unique($storedFilesId);
-                    
-                    if ( 0 < count($storedFilesId) ) {
-                        
-                        // Если в $value не содержится уже сохраненного файла, его нужно удалить
-                        foreach ( $storedFilesId as $k => $storedFileId ) {
-                            if ( !in_array($storedFileId, (array)$value) ) {
-                                $propertyValues[$storedPropertyValuesId[$storedFileId]] = [
-                                    'VALUE' => [
-                                        'del'   => 'Y',
-                                    ]
-                                ];
-                                unset($storedFilesId[$k]);
-                            }
+            try {
+                // @fixme Ждем пока в iblock ORM добавят поддержку множественных свойств, поэтому пока fallback на \CIBlockElement
+                if ( $sysEntity->getField($key) instanceof PropertyOneToMany ) {
+    
+                    // @fixme Удаление множественного свойства типа "Файл"
+                    if ( in_array(strtoupper($key), $this->fileProperties) ) {
+                        $propertyId = (int) $sysEntity->getField($key)?->getIblockElementProperty()?->get('ID');
+                        $propertyValues = [];
+                        $storedFilesId = [];
+                        $storedPropertyValuesId = [];
+        
+                        $res = CIBlockElement::GetProperty($this->iblockId, $obj->get('ID'), 'sort', 'asc', ['CODE' => $key]);
+        
+                        while ( $arProp = $res->Fetch() ) {
+                            $propertyValueId = $arProp['PROPERTY_VALUE_ID'];
+                            $propertyValue = $arProp['VALUE'];
+            
+                            $storedFilesId[] = $propertyValue;
+                            $storedPropertyValuesId[$propertyValue] = $propertyValueId;
                         }
-                        
-                        // Случай добавления новых файлов
-                        foreach ( $value as $fileId ) {
-                            if ( !in_array($fileId, $storedFilesId) ) {
-                                $propertyValues[] = $fileId;
+        
+                        $storedFilesId = array_unique($storedFilesId);
+        
+                        if ( 0 < count($storedFilesId) ) {
+            
+                            // Если в $value не содержится уже сохраненного файла, его нужно удалить
+                            foreach ( $storedFilesId as $k => $storedFileId ) {
+                                if ( !in_array($storedFileId, (array) $value) ) {
+                                    $propertyValues[$storedPropertyValuesId[$storedFileId]] = [
+                                        'VALUE' => [
+                                            'del' => 'Y',
+                                        ]
+                                    ];
+                                    unset($storedFilesId[$k]);
+                                }
                             }
+            
+                            // Случай добавления новых файлов
+                            foreach ( $value as $fileId ) {
+                                if ( !in_array($fileId, $storedFilesId) ) {
+                                    $propertyValues[] = $fileId;
+                                }
+                            }
+            
+                        } else {
+                            $propertyValues = $value;
                         }
-                        
+        
+                        if ( 0 < count($propertyValues) ) {
+                            CIBlockElement::SetPropertyValues($obj->get('ID'), $this->iblockId, $propertyValues, $key);
+                        }
+        
                     } else {
-                        $propertyValues = $value;
+                        CIBlockElement::SetPropertyValues($obj->get('ID'), $this->iblockId, $value, $key);
                     }
-                    
-                    if ( 0 < count($propertyValues) ) {
-                        CIBlockElement::SetPropertyValues($obj->get('ID'), $this->iblockId, $propertyValues, $key);
-                    }
-                    
-                } else {
-                    CIBlockElement::SetPropertyValues($obj->get('ID'), $this->iblockId, $value, $key);
+    
+                    continue;
                 }
-                
-                continue;
-            }
-            
-            $obj->set($key, $value);
-            
-            $field = $sysEntity->getField($key);
-            
-            // Только для свойств
-            //if ( in_array(get_class($field), ['Bitrix\Iblock\ORM\Fields\PropertyReference'], false) ) {
-            if ( str_contains(get_class($field), 'Property') ) {
-                
-                $parameters = [
-                    'elementId' => $data['ID'],
-                    'iblockId'  => $this->iblockId,
-                    'propertyValues'    => $value,
-                    'propertyCode'      => $key,
-                    'arProp'            => [
-                        $key    => [
-                            'ID'    => $field->getIblockElementProperty()->get('ID')
-                        ]
-                    ],
-                ];
-                $event = new Event('iblock', 'OnOrmIBlockElementSetPropertyValues', $parameters);
-                $event->send();
+
+                $obj->set($key, $value);
+
+                $field = $sysEntity->getField($key);
+
+                // Только для свойств
+                //if ( in_array(get_class($field), ['Bitrix\Iblock\ORM\Fields\PropertyReference'], false) ) {
+                if ( str_contains(get_class($field), 'Property') ) {
+    
+                    $parameters = [
+                        'elementId' => $data['ID'],
+                        'iblockId' => $this->iblockId,
+                        'propertyValues' => $value,
+                        'propertyCode' => $key,
+                        'arProp' => [
+                            $key => [
+                                'ID' => $field->getIblockElementProperty()->get('ID')
+                            ]
+                        ],
+                    ];
+                    $event = new Event('iblock', 'OnOrmIBlockElementSetPropertyValues', $parameters);
+                    $event->send();
+                }
+            } catch (ArgumentException $e) {
+                throw new InvalidArgumentException($e->getMessage(), $e->getCode(), $e->getPrevious());
+            } catch (SystemException $e) {
+                throw new RuntimeException($e->getMessage(), $e->getCode(), $e->getPrevious());
             }
         }
+    
+        try {
+            $obj->set('MODIFIED_BY', CurrentUser::get()->getId());
         
-        $obj->set('MODIFIED_BY', CurrentUser::get()->getId());
-        $obj->set('TIMESTAMP_X', new DateTime());
-        
-        $result = $obj->save();
-        
-        // Очистка кеша
-        $obj->sysGetEntity()->cleanCache();
-        //\Bitrix\Iblock\Iblock::wakeup($this->iblockId)->getEntityDataClass()::getEntity()->cleanCache();
+            $obj->set('TIMESTAMP_X', new DateTime());
+            
+            $result = $obj->save();
+            
+            // Очистка кеша
+            $obj->sysGetEntity()->cleanCache();
+            //\Bitrix\Iblock\Iblock::wakeup($this->iblockId)->getEntityDataClass()::getEntity()->cleanCache();
+        } catch (ArgumentException $e) {
+            throw new InvalidArgumentException($e->getMessage(), $e->getCode(), $e->getPrevious());
+        } catch (SystemException $e) {
+            throw new RuntimeException($e->getMessage(), $e->getCode(), $e->getPrevious());
+        }
         
         if ( !$result->isSuccess() ) {
             throw new RuntimeException($result->getErrorMessages()[0]);
@@ -1078,8 +1121,14 @@ abstract class Bxd7
             $event = new Event('iblock', 'OnOrmAfterIBlockElementUpdate', $parameters);
             $event->send();
         }
-        
-        return $obj->getId();
+    
+        try {
+            $id = $obj->getId();
+        } catch (SystemException $e) {
+            throw new RuntimeException($e->getMessage(), $e->getCode(), $e->getPrevious());
+        }
+    
+        return $id;
     }
     
     /**
@@ -1087,27 +1136,39 @@ abstract class Bxd7
      *
      * @param int $id
      * @return bool $result
-     * @throws Exception
+     * @throws NotFoundException
+     * @throws InvalidArgumentException
+     * @throws RuntimeException
      */
     public function delete(int $id): bool
     {
-        $iblock = Iblock::wakeUp($this->iblockId);
-        $entity = $iblock->getEntityDataClass();
-        
-        if ( !$obj = $entity::getByPrimary($id)->fetchObject() ) {
-            throw new Exception('Элемент не найден');
+        try {
+            $iblock = Iblock::wakeUp($this->iblockId);
+            $entity = $iblock->getEntityDataClass();
+            
+            if ( !$obj = $entity::getByPrimary($id)->fetchObject() ) {
+                throw new NotFoundException('Элемент не найден');
+            }
+            
+            $result = $obj->delete();
+            
+            if ( !$result->isSuccess() ) {
+                return false;
+            }
+            
+            // @fixme вызывать события удаления элемента и свойств
+            
+            // @fixme Очистка кеша
+            //\Bitrix\Iblock\Iblock::wakeup($this->iblockId)->getEntityDataClass()::getEntity()->cleanCache();
+        } catch (ObjectPropertyException $e) {
+            throw new InvalidArgumentException($e->getMessage(), $e->getCode(), $e->getPrevious());
+        } catch (ArgumentException $e) {
+            throw new InvalidArgumentException($e->getMessage(), $e->getCode(), $e->getPrevious());
+        } catch (SystemException $e) {
+            throw new RuntimeException($e->getMessage(), $e->getCode(), $e->getPrevious());
+        } catch (NotFoundException $e) {
+            throw new NotFoundException($e->getMessage(), $e->getCode(), $e->getPrevious());
         }
-        
-        $result = $obj->delete();
-        
-        if ( !$result->isSuccess() ) {
-            return false;
-        }
-        
-        // @fixme вызывать события удаления элемента и свойств
-        
-        // @fixme Очистка кеша
-        //\Bitrix\Iblock\Iblock::wakeup($this->iblockId)->getEntityDataClass()::getEntity()->cleanCache();
         
         return true;
     }
@@ -1292,29 +1353,41 @@ abstract class Bxd7
     
     /**
      * @return void
-     * @throws Exception
+     * @throws RuntimeException
      */
     public function startTransaction(): void
     {
-        Application::getConnection()->startTransaction();
+        try {
+            Application::getConnection()->startTransaction();
+        } catch (SqlQueryException $e) {
+            throw new RuntimeException($e->getMessage(), $e->getCode(), $e->getPrevious());
+        }
     }
     
     /**
      * @return void
-     * @throws Exception
+     * @throws RuntimeException
      */
     public function commitTransaction(): void
     {
-        Application::getConnection()->commitTransaction();
+        try {
+            Application::getConnection()->commitTransaction();
+        } catch (SqlQueryException $e) {
+            throw new RuntimeException($e->getMessage(), $e->getCode(), $e->getPrevious());
+        }
     }
     
     /**
      * @return void
-     * @throws Exception
+     * @throws RuntimeException
      */
     public function rollbackTransaction(): void
     {
-        Application::getConnection()->rollbackTransaction();
+        try {
+            Application::getConnection()->rollbackTransaction();
+        } catch (SqlQueryException $e) {
+            throw new RuntimeException($e->getMessage(), $e->getCode(), $e->getPrevious());
+        }
     }
     
     /**
@@ -1361,18 +1434,25 @@ abstract class Bxd7
      * Проверка существование свойства инфоблока
      * @param string $propertyName
      * @return bool
-     * @throws ArgumentException
-     * @throws ObjectPropertyException
-     * @throws SystemException
+     * @throws InvalidArgumentException
+     * @throws RuntimeException
      */
     public function propertyExists(string $propertyName): bool
     {
-        $resource = PropertyTable::getList([
-            'filter' => [
-                'IBLOCK_ID' => $this->getIblockId(),
-                'CODE'      => $propertyName
-            ]
-        ]);
+        try {
+            $resource = PropertyTable::getList([
+                'filter' => [
+                    'IBLOCK_ID' => $this->getIblockId(),
+                    'CODE' => $propertyName,
+                ],
+            ]);
+        } catch (ObjectPropertyException $e) {
+            throw new InvalidArgumentException($e->getMessage(), $e->getCode(), $e->getPrevious());
+        } catch (ArgumentException $e) {
+            throw new InvalidArgumentException($e->getMessage(), $e->getCode(), $e->getPrevious());
+        } catch (SystemException $e) {
+            throw new RuntimeException($e->getMessage(), $e->getCode(), $e->getPrevious());
+        }
     
         if ( !$resource->fetch() ) {
             return false;
