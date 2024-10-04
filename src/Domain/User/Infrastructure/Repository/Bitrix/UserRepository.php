@@ -51,8 +51,10 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
         $this->filter = new UserFilter($service);
         $this->limit = new UserLimit($service);
         $this->fields = new UserFields($service);
+        
+        parent::__construct();
     }
-
+    
     /**
      * Returns class constants
      * @return array<string, string>
@@ -210,7 +212,7 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
         
         return $users;
     }
-
+    
     /**
      * @return UserInterface|null
      * @throws Exception
@@ -362,7 +364,7 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
         // @fixme переделать проверку
         return 0 < CurrentUser::get()->getId();
     }
-
+    
     /**
      * @return int
      * @throws ObjectPropertyException
@@ -371,7 +373,7 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
     {
         return $this->result->getCount();
     }
-
+    
     /**
      * @return int
      */
