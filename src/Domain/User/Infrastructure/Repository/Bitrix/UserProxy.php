@@ -36,7 +36,7 @@ class UserProxy
      * @param Role $role
      * @return void
      */
-    public static function registerRoleObject(Role $role)
+    public static function registerRoleObject(Role $role): void
     {
         self::$role = $role;
     }
