@@ -1,5 +1,6 @@
 {
   "name": "foreline/clean-bitrix",
+  "description": "Implementation of clean PHP library for 1C-Bitrix",
   "type": "project",
   "license": "MIT",
   "authors": [
