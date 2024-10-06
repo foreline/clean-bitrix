@@ -121,7 +121,7 @@ class OrmDataManager extends DataManager
             return;
         }
         
-        $sqlField = 'ALTER TABLE IF EXISTS `' . static::getTableName() . '` ADD ' . self::getSqlField($field, $connection);
+        $sqlField = 'ALTER TABLE `' . static::getTableName() . '` ADD ' . self::getSqlField($field, $connection);
         
         $connection->query($sqlField);
     }
@@ -137,14 +137,14 @@ class OrmDataManager extends DataManager
     {
         if ( $field instanceof TextField ) {
             if ( 'text' !== $actualFields[$field->getName()]['Type'] ) {
-                $sqlField = 'ALTER TABLE IF EXISTS `' . static::getTableName() . '` MODIFY ' . self::getSqlField($field, $connection);
+                $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY IF EXISTS ' . self::getSqlField($field, $connection);
                 $connection->query($sqlField);
             }
         }
         
         if ( $field instanceof StringField ) {
             if ( 'varchar(255)' !== $actualFields[$field->getName()]['Type'] ) {
-                $sqlField = 'ALTER TABLE IF EXISTS `' . static::getTableName() . '` MODIFY ' . self::getSqlField($field, $connection);
+                $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY IF EXISTS ' . self::getSqlField($field, $connection);
                 $connection->query($sqlField);
             }
         }
@@ -166,7 +166,7 @@ class OrmDataManager extends DataManager
             return;
         }
     
-        $sqlField = 'ALTER TABLE IF EXISTS `' . static::getTableName() . '` DROP `' . $actualField['Field'] . '`';
+        $sqlField = 'ALTER TABLE `' . static::getTableName() . '` DROP IF EXISTS `' . $actualField['Field'] . '`';
         $connection->query($sqlField);
     }
 }
