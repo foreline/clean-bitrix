@@ -11,6 +11,7 @@ use Bitrix\Main\DB\Result;
 use Bitrix\Main\DB\SqlQueryException;
 use Bitrix\Main\Entity\Base;
 use Bitrix\Main\Entity\TextField;
+use Bitrix\Main\ObjectPropertyException;
 use Bitrix\Main\ORM\Data\DataManager;
 use Bitrix\Main\ORM\Fields\StringField;
 use Bitrix\Main\SystemException;
@@ -34,7 +35,7 @@ class OrmDataManager extends DataManager
         $sqlQuery = 'DROP TABLE IF EXISTS `' . static::getTableName() . '`';
         return static::getEntity()->getConnection()->query($sqlQuery);
     }
-
+    
     /**
      * Creates and modifies DB table
      * @return void
@@ -89,7 +90,7 @@ class OrmDataManager extends DataManager
             self::addField($field, $actualFields, $connection);
             self::alterField($field, $actualFields, $connection);
         }
-
+        
         foreach ( $actualFields as $actualField ) {
             self::deleteField($actualField, $scalarFields, $connection);
         }
@@ -125,7 +126,7 @@ class OrmDataManager extends DataManager
         
         $connection->query($sqlField);
     }
-
+    
     /**
      * @param mixed $field
      * @param array $actualFields
@@ -135,16 +136,20 @@ class OrmDataManager extends DataManager
      */
     public static function alterField(mixed $field, array $actualFields, Connection $connection): void
     {
+        if ( !self::columnExists($connection, $field) ) {
+            return;
+        }
+        
         if ( $field instanceof TextField ) {
             if ( 'text' !== $actualFields[$field->getName()]['Type'] ) {
-                $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY IF EXISTS ' . self::getSqlField($field, $connection);
+                $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY ' . self::getSqlField($field, $connection);
                 $connection->query($sqlField);
             }
         }
         
         if ( $field instanceof StringField ) {
             if ( 'varchar(255)' !== $actualFields[$field->getName()]['Type'] ) {
-                $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY IF EXISTS ' . self::getSqlField($field, $connection);
+                $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY ' . self::getSqlField($field, $connection);
                 $connection->query($sqlField);
             }
         }
@@ -152,7 +157,7 @@ class OrmDataManager extends DataManager
         // @fixme @todo for other Fields
         
     }
-
+    
     /**
      * @param array $actualField
      * @param mixed $scalarFields
@@ -165,8 +170,42 @@ class OrmDataManager extends DataManager
         if ( array_key_exists($actualField['Field'], $scalarFields) ) {
             return;
         }
-    
-        $sqlField = 'ALTER TABLE `' . static::getTableName() . '` DROP IF EXISTS `' . $actualField['Field'] . '`';
+        
+        if ( !self::columnExists($connection, $actualField['Field']) ) {
+            return;
+        }
+        
+        $sqlField = 'ALTER TABLE \'' . static::getTableName() . '\' DROP COLUMN \'' . $actualField['Field'] . '\'';
+        
         $connection->query($sqlField);
+    }
+    
+    /**
+     *
+     * @param Connection $connection
+     * @param string $columnName
+     * @param string $tableName
+     * @return bool
+     * @throws SqlQueryException
+     */
+    public static function columnExists(Connection $connection, string $columnName, string $tableName = ''): bool
+    {
+        $tableName = $tableName ?: static::getTableName();
+        
+        $sql = '
+        SELECT COLUMN_NAME
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE
+                TABLE_NAME = \'' . addslashes($tableName) . '\'
+                AND COLUMN_NAME = \'' . addslashes($columnName) . '\';
+        ';
+        
+        $result = $connection->query($sql);
+        
+        if ( !$fetch = $result->fetch() ) {
+            return false;
+        }
+        
+        return (bool) $fetch;
     }
 }
