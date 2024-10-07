@@ -11,7 +11,6 @@ use Bitrix\Main\DB\Result;
 use Bitrix\Main\DB\SqlQueryException;
 use Bitrix\Main\Entity\Base;
 use Bitrix\Main\Entity\TextField;
-use Bitrix\Main\ObjectPropertyException;
 use Bitrix\Main\ORM\Data\DataManager;
 use Bitrix\Main\ORM\Fields\StringField;
 use Bitrix\Main\SystemException;
@@ -51,7 +50,7 @@ class OrmDataManager extends DataManager
     }
     
     /**
-     * Created database table
+     * Created database table if it does not exist
      * @throws Exception
      */
     public static function createTable(): void
@@ -65,6 +64,7 @@ class OrmDataManager extends DataManager
     }
     
     /**
+     * Updates table fields
      * @return void
      * @throws SqlQueryException
      * @throws SystemException
@@ -136,7 +136,7 @@ class OrmDataManager extends DataManager
      */
     public static function alterField(mixed $field, array $actualFields, Connection $connection): void
     {
-        if ( !self::columnExists($connection, $field) ) {
+        if ( !self::columnExists($connection, $field->getName()) ) {
             return;
         }
         
