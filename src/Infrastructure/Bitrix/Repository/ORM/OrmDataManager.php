@@ -175,7 +175,7 @@ class OrmDataManager extends DataManager
             return;
         }
         
-        $sqlField = 'ALTER TABLE \'' . static::getTableName() . '\' DROP COLUMN \'' . $actualField['Field'] . '\'';
+        $sqlField = 'ALTER TABLE `' . static::getTableName() . '` DROP COLUMN `' . $actualField['Field'] . '`';
         
         $connection->query($sqlField);
     }
