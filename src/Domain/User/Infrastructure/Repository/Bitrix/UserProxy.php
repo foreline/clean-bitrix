@@ -66,7 +66,7 @@ class UserProxy
             UserRepositoryInterface::GROUPS  =>
                 $user->getRoles()
                     ?
-                    GroupManager::getInstance()->addFilter(UserRepositoryInterface::GROUPS,
+                    (new GroupManager())->filterByCode(
                         array_map(
                             fn(Role $role): string => $role->getRole(),
                             $user->getRoles()->getCollection()
