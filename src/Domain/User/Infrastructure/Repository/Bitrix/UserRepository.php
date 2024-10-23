@@ -257,6 +257,10 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
     private function create(UserInterface $user): int
     {
         global $USER;
+    
+        if ( !$USER ) {
+            $USER = new CUser();
+        }
         
         $userData = $this->entityToArray($user);
         
@@ -293,6 +297,10 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
     private function update(UserInterface $user): bool
     {
         global $USER;
+    
+        if ( !$USER ) {
+            $USER = new CUser();
+        }
         
         $userData = $this->entityToArray($user);
         
