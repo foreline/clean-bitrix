@@ -25,14 +25,18 @@ class OrmDataManager extends DataManager
     public static string $entityTableClass;
     
     /**
-     * @throws SqlQueryException
-     * @throws SystemException
+     * @throws Exception
      * @return Result
      */
     public static function dropTable(): Result
     {
-        $sqlQuery = 'DROP TABLE IF EXISTS `' . static::getTableName() . '`';
-        return static::getEntity()->getConnection()->query($sqlQuery);
+        try {
+            $sqlQuery = 'DROP TABLE IF EXISTS `' . static::getTableName() . '`';
+            $result = static::getEntity()->getConnection()->query($sqlQuery);
+        } catch (Exception $e) {
+            throw new Exception('Ошибка при удалении таблицы "' . static::getTableName() . '": ' . $e->getMessage());
+        }
+        return $result;
     }
     
     /**
