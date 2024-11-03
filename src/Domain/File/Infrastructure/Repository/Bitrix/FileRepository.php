@@ -15,7 +15,7 @@ use Domain\File\Infrastructure\Repository\FileFilter;
 use Domain\File\Infrastructure\Repository\FileLimit;
 use Domain\File\Infrastructure\Repository\FileRepositoryInterface;
 use Domain\File\Infrastructure\Repository\FileSort;
-use Domain\UseCase\ServiceInterface;
+use Domain\Service\ServiceInterface;
 use Exception;
 use ReflectionClass;
 

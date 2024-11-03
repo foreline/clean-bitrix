@@ -13,7 +13,7 @@ use Domain\Repository\FieldsInterface;
 use Domain\Repository\FilterInterface;
 use Domain\Repository\LimitInterface;
 use Domain\Repository\SortInterface;
-use Domain\UseCase\ServiceInterface;
+use Domain\Service\ServiceInterface;
 use Domain\User\Aggregate\User;
 use Domain\User\Aggregate\UserInterface;
 use Domain\User\Aggregate\UserCollection;
