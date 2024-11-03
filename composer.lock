@@ -8,11 +8,11 @@
     "packages": [
         {
             "name": "foreline/clean",
-            "version": "v0.4.16",
+            "version": "v0.4.17",
             "source": {
                 "type": "git",
                 "url": "https://github.com/foreline/clean.git",
-                "reference": "730d30df5113f3b97de34dd3c7552e767bf92003"
+                "reference": "a0568bb2e92c7dae62d8226cc41741f01e092b83"
             },
             "require": {
                 "ext-curl": "*",
@@ -43,7 +43,7 @@
                 }
             ],
             "description": "PHP clean architecture framework",
-            "time": "2024-10-28T10:45:18+00:00"
+            "time": "2024-11-03T10:11:56+00:00"
         },
         {
             "name": "symfony/http-foundation",
