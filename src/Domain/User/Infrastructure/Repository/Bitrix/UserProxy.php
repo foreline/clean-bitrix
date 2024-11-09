@@ -60,6 +60,7 @@ class UserProxy
             UserRepositoryInterface::DEPARTMENT     => $user->getDepartment(),
             UserRepositoryInterface::POSITION       => $user->getPosition(),
             UserRepositoryInterface::CONFIRM_CODE   => $user->getConfirmationCode(),
+            UserRepositoryInterface::EXT_ID         => $user->getExtId(),
             
             // @fixme
             //UserRepositoryInterface::GROUPS => $user->getGroups()?->getIds(),
@@ -156,6 +157,10 @@ class UserProxy
                 $role = new self::$role($group->getCode());
                 $user->addRole($role);
             }
+        }
+    
+        if ( null !== ($extId = $obj->get(UserRepositoryInterface::EXT_ID)) ) {
+            $user->setExtId($extId);
         }
         
         $this->getUserFields($user, $obj);
