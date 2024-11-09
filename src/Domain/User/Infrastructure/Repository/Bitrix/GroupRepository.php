@@ -81,9 +81,13 @@ class GroupRepository extends GroupProxy implements GroupRepositoryInterface
         } elseif ( !empty($filter['ID']) ) {
             $arFilter['ID'] = (int)$filter['ID'];
         }
-        
+    
         if ( !empty($filter['STRING_ID']) ) {
-            $arFilter['STRING_ID'] = (string)$filter['STRING_ID'];
+            if ( is_array($filter['STRING_ID']) ) {
+                $arFilter['STRING_ID'] = implode('|', $filter['STRING_ID']);
+            } else {
+                $arFilter['STRING_ID'] = (string)$filter['STRING_ID'];
+            }
         }
         
         $this->res = CGroup::GetList(
