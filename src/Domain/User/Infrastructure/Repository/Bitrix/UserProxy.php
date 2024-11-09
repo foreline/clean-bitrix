@@ -8,6 +8,7 @@ use Bitrix\Main\ObjectPropertyException;
 use Bitrix\Main\SystemException;
 use Bitrix\Main\UserFieldTable;
 use Bitrix\Main\UserTable;
+use Domain\File\UseCase\GetFile;
 use Domain\User\Aggregate\User;
 use Domain\User\Aggregate\UserInterface;
 use Domain\User\Infrastructure\Repository\UserRepositoryInterface;
@@ -61,6 +62,7 @@ class UserProxy
             UserRepositoryInterface::POSITION       => $user->getPosition(),
             UserRepositoryInterface::CONFIRM_CODE   => $user->getConfirmationCode(),
             UserRepositoryInterface::EXT_ID         => $user->getExtId(),
+            UserRepositoryInterface::AVATAR         => $user->getAvatar()?->getId(),
             
             // @fixme
             //UserRepositoryInterface::GROUPS => $user->getGroups()?->getIds(),
@@ -161,6 +163,12 @@ class UserProxy
     
         if ( null !== ($extId = $obj->get(UserRepositoryInterface::EXT_ID)) ) {
             $user->setExtId($extId);
+        }
+    
+        if ( null !== ($avatarId = $obj->get(UserRepositoryInterface::AVATAR)) ) {
+            if ( $avatar = (new GetFile())->get($avatarId) ) {
+                $user->setAvatar($avatar);
+            }
         }
         
         $this->getUserFields($user, $obj);

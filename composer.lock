@@ -4,15 +4,15 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "4d8aad983e030e674b16dd5fbcac0bcc",
+    "content-hash": "0bea4d490a3eb4a34b826b62652f3344",
     "packages": [
         {
             "name": "foreline/clean",
-            "version": "v0.4.20",
+            "version": "v0.4.21",
             "source": {
                 "type": "git",
                 "url": "https://github.com/foreline/clean.git",
-                "reference": "5aa17a693890cfb88c7881386a5c995999284be2"
+                "reference": "658541e249cd7026e77f2684e7ed1f8e6e7c7244"
             },
             "require": {
                 "ext-curl": "*",
@@ -43,7 +43,7 @@
                 }
             ],
             "description": "PHP clean architecture framework",
-            "time": "2024-11-09T12:06:25+00:00"
+            "time": "2024-11-09T13:32:46+00:00"
         },
         {
             "name": "symfony/http-foundation",
