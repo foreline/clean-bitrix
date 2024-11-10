@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "0bea4d490a3eb4a34b826b62652f3344",
+    "content-hash": "2249f1251909bddd35963ae0e0bad84d",
     "packages": [
         {
             "name": "foreline/clean",
