@@ -15,11 +15,12 @@ use Domain\User\Infrastructure\Repository\UserRepositoryInterface;
 use Domain\User\UseCase\GroupManager;
 use Domain\User\ValueObject\Role;
 use Exception;
+use Infrastructure\Bitrix\Repository\ORM\Repository;
 
 /**
  * Data Transfer Object for User
  */
-class UserProxy
+class UserProxy extends Repository
 {
     private static ?Role $role = null;
     

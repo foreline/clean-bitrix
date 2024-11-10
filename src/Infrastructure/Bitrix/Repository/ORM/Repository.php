@@ -77,7 +77,7 @@ class Repository
         
         foreach ( $filter as $key => $value ) {
             
-            if ( 'condition' === $key ) {
+            if ( 'condition' === $key || 'CONDITION' === $key ) {
                 
                 $logic = mb_strtoupper($value['LOGIC']);
                 unset($value['LOGIC']);

@@ -110,7 +110,7 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
             $params['filter'] = $filter;
         }
         
-        if ( 0 < count($sort) ) {
+        /*if ( 0 < count($sort) ) {
             $sort = array_change_key_case($sort, CASE_UPPER);
             $params['order'] = $sort;
             
@@ -122,7 +122,7 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
                     new ExpressionField('RAND', 'RAND()')
                 ];
             }
-        }
+        }*/
         
         /*if ( 0 < (int)$limit['page_size'] ) {
             $params['limit'] = (int)$limit['page_size'];
@@ -134,7 +134,7 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
         
         // LIMITS
         
-        $lim = (int) ( $limit['page_size'] ?: $limit['limit']);
+        /*$lim = (int) ( $limit['page_size'] ?: $limit['limit']);
         
         if ( 0 < $lim ) {
             $params['limit'] = $lim;
@@ -144,7 +144,7 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
             } elseif ( 0 < (int)$limit['offset'] ) {
                 $params['offset'] = (int)$limit['offset'];
             }
-        }
+        }*/
         
         // @fixme выбирать группы в основном запросе
         /*$params['runtime'] = [
@@ -156,6 +156,8 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
                 'join_type' => 'left',
             ]
         ];*/
+    
+        $params = $this->getParams($filter, $sort, $limit, $fields);
         
         if ( !$this->result = UserTable::getList($params) ) {
             return null;
