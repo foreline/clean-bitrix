@@ -76,7 +76,11 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
      */
     public function query(array $filter = [], array $sort = [], array $limit = [], array $fields = []): ?self
     {
+        // @fixme
+        $fields = ( 0 < count($fields) ? $fields : ['*', 'UF*'] );
+        
         $params = [
+            // @fixme
             //'select' => ( 0 < count($fields) ? $fields : ['*', 'UF_*'] ),
             'select' => ( 0 < count($fields) ? $fields : ['*', 'UF*'] ),
             'cache' => [
