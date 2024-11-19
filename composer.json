@@ -11,7 +11,7 @@
   ],
   "require": {
     "php": ">=8.0",
-    "foreline/clean": "~0.5.01",
+    "foreline/clean": "~0.5.04",
     "webmozart/assert": "^1.11",
     "symfony/http-foundation": ">6.3",
     "ext-curl": "*"
@@ -31,7 +31,7 @@
   "repositories": [
     {
       "type": "git",
-      "url": "https://github.com/foreline/clean.git"
+      "url": "ssh://git@gitlab.foreline.ru:2222/foreline/clean.git"
     }
   ]
 }
