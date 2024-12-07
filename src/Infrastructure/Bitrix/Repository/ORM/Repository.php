@@ -6,12 +6,24 @@ namespace Infrastructure\Bitrix\Repository\ORM;
 use Bitrix\Main\ArgumentException;
 use Bitrix\Main\DB\Result;
 use Bitrix\Main\ORM\Fields\ExpressionField;
+use Domain\Repository\FieldsInterface;
+use Domain\Repository\FilterInterface;
+use Domain\Repository\GroupInterface;
+use Domain\Repository\LimitInterface;
+use Domain\Repository\SortInterface;
+use JetBrains\PhpStorm\Deprecated;
 
 /**
  * ORM Repository class
  */
 class Repository
 {
+    public ?FilterInterface $filter = null;
+    public ?SortInterface $sort = null;
+    public ?LimitInterface $limit = null;
+    public ?FieldsInterface $fields = null;
+    public ?GroupInterface $group = null;
+    
     public ?Result $res;
     
     /**
@@ -22,7 +34,7 @@ class Repository
      * @return array
      * @noinspection PhpTooManyParametersInspection
      */
-    public function getParams(iterable $filter = [], iterable $sort = [], iterable $limit = [], iterable $fields = []): array
+    public function getParams(#[Deprecated]iterable $filter = [], #[Deprecated]iterable $sort = [], #[Deprecated]iterable $limit = [], #[Deprecated]iterable $fields = []): array
     {
         $params = [
             'cache' => [
@@ -62,7 +74,12 @@ class Repository
         if ( empty($fields) ) {
             $fields = ['*'];
         }
+        
         $params['select'] = $fields;
+        
+        if ( $this->group ) {
+            $params['group'] = $this->group->get();
+        }
         
         return $params;
     }

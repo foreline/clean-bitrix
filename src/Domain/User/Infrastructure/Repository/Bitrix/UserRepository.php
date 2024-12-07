@@ -11,6 +11,7 @@ use Bitrix\Main\UserTable;
 use CUser;
 use Domain\Repository\FieldsInterface;
 use Domain\Repository\FilterInterface;
+use Domain\Repository\GroupInterface;
 use Domain\Repository\LimitInterface;
 use Domain\Repository\SortInterface;
 use Domain\Service\ServiceInterface;
@@ -20,10 +21,12 @@ use Domain\User\Aggregate\UserCollection;
 use Domain\User\Aggregate\UsersInterface;
 use Domain\User\Infrastructure\Repository\UserFields;
 use Domain\User\Infrastructure\Repository\UserFilter;
+use Domain\User\Infrastructure\Repository\UserGroup;
 use Domain\User\Infrastructure\Repository\UserLimit;
 use Domain\User\Infrastructure\Repository\UserRepositoryInterface;
 use Domain\User\Infrastructure\Repository\UserSort;
 use Exception;
+use JetBrains\PhpStorm\Deprecated;
 use ReflectionClass;
 use RuntimeException;
 
@@ -37,20 +40,22 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
     
     protected ?Result $result = null;
     
-    public FilterInterface|UserFilter $filter;
-    public FieldsInterface|UserFields $fields;
-    public LimitInterface|UserLimit $limit;
-    public SortInterface|UserSort $sort;
+    public FilterInterface|UserFilter|null $filter;
+    public FieldsInterface|UserFields|null $fields;
+    public LimitInterface|UserLimit|null $limit;
+    public SortInterface|UserSort|null $sort;
+    public GroupInterface|UserGroup|null $group;
     
     /**
      *
      */
     public function __construct(?ServiceInterface $service = null)
     {
-        $this->sort = new UserSort($service);
-        $this->filter = new UserFilter($service);
-        $this->limit = new UserLimit($service);
-        $this->fields = new UserFields($service);
+        $this->sort     = new UserSort($service);
+        $this->filter   = new UserFilter($service);
+        $this->limit    = new UserLimit($service);
+        $this->fields   = new UserFields($service);
+        $this->group    = new UserGroup($service);
         
         parent::__construct();
     }
@@ -74,7 +79,7 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
      * @throws Exception
      * @noinspection PhpTooManyParametersInspection
      */
-    public function query(array $filter = [], array $sort = [], array $limit = [], array $fields = []): ?self
+    public function query(#[Deprecated]array $filter = [], #[Deprecated]array $sort = [], #[Deprecated]array $limit = [], #[Deprecated]array $fields = []): ?self
     {
         // @fixme
         $fields = ( 0 < count($fields) ? $fields : ['*', 'UF*'] );
