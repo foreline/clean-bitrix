@@ -2,10 +2,11 @@ image: php:8.2
 
 stages:
   - build
+  - test
 
 job-composer:
   stage: build
-  before-script:
+  before_script:
     - echo "Running Composer Job"
   script:
     - apt-get update -yq && apt-get install -y unzip git libzip-dev
@@ -17,3 +18,19 @@ job-composer:
     untracked: true
     paths:
       - vendor/
+      - composer.lock
+
+job-phpstan:
+  stage: test
+  before_script:
+    - echo "Running PHPStan code analysis"
+  script:
+    - php ./vendor/bin/phpstan analyze -c phpstan.neon --no-progress --error-format gitlab > ./phpstan-report.json
+  artifacts:
+    paths:
+      - ./phpstan-report.json
+    expire_in: 1 hour
+    when: always
+    reports:
+      codequality: "./phpstan-report.json"
+  allow_failure: true
