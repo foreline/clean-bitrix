@@ -4,15 +4,15 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "5b694e6b931d68b078ad6c21e95e893b",
+    "content-hash": "78e08528226aaaaeeb6e031626e38ca8",
     "packages": [
         {
             "name": "foreline/clean",
-            "version": "v0.5.07",
+            "version": "v0.5.08",
             "source": {
                 "type": "git",
                 "url": "ssh://git@gitlab.foreline.ru:2222/foreline/clean.git",
-                "reference": "c49262476bd2d9869ba9df17f291e210fa8a9ef0"
+                "reference": "e9258207061602cf4a36320b30e097c3ab27e9fa"
             },
             "require": {
                 "ext-curl": "*",
@@ -43,7 +43,7 @@
                 }
             ],
             "description": "PHP clean architecture framework",
-            "time": "2024-12-07T08:07:56+00:00"
+            "time": "2024-12-14T08:17:51+00:00"
         },
         {
             "name": "symfony/deprecation-contracts",
@@ -216,8 +216,8 @@
             "type": "library",
             "extra": {
                 "thanks": {
-                    "name": "symfony/polyfill",
-                    "url": "https://github.com/symfony/polyfill"
+                    "url": "https://github.com/symfony/polyfill",
+                    "name": "symfony/polyfill"
                 }
             },
             "autoload": {
@@ -290,8 +290,8 @@
             "type": "library",
             "extra": {
                 "thanks": {
-                    "name": "symfony/polyfill",
-                    "url": "https://github.com/symfony/polyfill"
+                    "url": "https://github.com/symfony/polyfill",
+                    "name": "symfony/polyfill"
                 }
             },
             "autoload": {
