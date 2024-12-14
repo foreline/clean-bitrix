@@ -7,6 +7,7 @@ use Bitrix\Main\DB\Result;
 use Bitrix\Main\Engine\CurrentUser;
 use Bitrix\Main\Entity\ExpressionField;
 use Bitrix\Main\ObjectPropertyException;
+use Bitrix\Main\UserGroupTable;
 use Bitrix\Main\UserTable;
 use CUser;
 use Domain\Repository\FieldsInterface;
@@ -295,9 +296,23 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
      */
     private function updateGroups(User|UserInterface $user): void
     {
-        $roles = $user->getRoles();
+        if ( !$groups = $user->getGroups() ) {
+            return;
+        }
+    
+        foreach ( $groups as $group ) {
         
-        // @fixme реализовать метод
+            $data = [
+                'USER_ID'   => $user->getId(),
+                'GROUP_ID'  => $group->getId(),
+            ];
+        
+            $result = UserGroupTable::add($data);
+        
+            if ( !$result->isSuccess() ) {
+                throw new Exception($result->getErrorMessages()[0]);
+            }
+        }
     }
     
     /**
