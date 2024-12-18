@@ -306,6 +306,10 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
                 'USER_ID'   => $user->getId(),
                 'GROUP_ID'  => $group->getId(),
             ];
+    
+            if ( 0 < UserGroupTable::getList(['filter' => $data])->getCount() ) {
+                continue;
+            }
         
             $result = UserGroupTable::add($data);
         
