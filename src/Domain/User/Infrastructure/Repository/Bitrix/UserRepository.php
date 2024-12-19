@@ -166,7 +166,7 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
                 'join_type' => 'left',
             ]
         ];*/
-    
+        
         $params = $this->getParams($filter, $sort, $limit, $fields);
         
         if ( !$this->result = UserTable::getList($params) ) {
@@ -269,7 +269,7 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
     private function create(UserInterface $user): int
     {
         global $USER;
-    
+        
         if ( !$USER ) {
             $USER = new CUser();
         }
@@ -299,20 +299,33 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
         if ( !$groups = $user->getGroups() ) {
             return;
         }
-    
-        foreach ( $groups as $group ) {
         
+        // Удаляем из групп
+        foreach ( UserGroupTable::getList(['filter' => ['USER_ID' => $user->getId()]])->fetchAll() as $currentUserGroups ) {
+            $groupId = (int) $currentUserGroups['GROUP_ID'];
+            if ( in_array($groupId, $user->getGroups()->getIds()) ) {
+                continue;
+            }
+            $deleteResult = UserGroupTable::delete(['USER_ID' => $user->getId(), 'GROUP_ID' => $groupId]);
+            if ( !$deleteResult->isSuccess() ) {
+                throw new Exception('Ошибка при удалении пользователя ' . $user->getId() . ' из группы ' . $groupId);
+            }
+        }
+        
+        // Добавляем в группы
+        foreach ( $groups as $group ) {
+            
             $data = [
                 'USER_ID'   => $user->getId(),
                 'GROUP_ID'  => $group->getId(),
             ];
-    
-            if ( 0 < UserGroupTable::getList(['filter' => $data])->getCount() ) {
+            
+            if ( UserGroupTable::getList(['filter' => $data])->fetch() ) {
                 continue;
             }
-        
+            
             $result = UserGroupTable::add($data);
-        
+            
             if ( !$result->isSuccess() ) {
                 throw new Exception($result->getErrorMessages()[0]);
             }
@@ -327,7 +340,7 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
     private function update(UserInterface $user): bool
     {
         global $USER;
-    
+        
         if ( !$USER ) {
             $USER = new CUser();
         }
