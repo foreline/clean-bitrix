@@ -8,11 +8,11 @@
     "packages": [
         {
             "name": "foreline/clean",
-            "version": "v0.5.09",
+            "version": "v0.5.10",
             "source": {
                 "type": "git",
                 "url": "ssh://git@gitlab.foreline.ru:2222/foreline/clean.git",
-                "reference": "8eecfa0a88e50ca88c4f30753b4d2337f889d4b2"
+                "reference": "d20031d44a2ba7256e9eb53eeafede09d2fc19af"
             },
             "require": {
                 "ext-curl": "*",
@@ -43,7 +43,7 @@
                 }
             ],
             "description": "PHP clean architecture framework",
-            "time": "2024-12-22T07:39:40+00:00"
+            "time": "2024-12-22T08:29:01+00:00"
         },
         {
             "name": "symfony/deprecation-contracts",
