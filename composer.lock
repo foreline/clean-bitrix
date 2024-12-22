@@ -4,15 +4,15 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "78e08528226aaaaeeb6e031626e38ca8",
+    "content-hash": "efbad3aadb4dba05d077ce23f5e1df78",
     "packages": [
         {
             "name": "foreline/clean",
-            "version": "v0.5.08",
+            "version": "v0.5.09",
             "source": {
                 "type": "git",
                 "url": "ssh://git@gitlab.foreline.ru:2222/foreline/clean.git",
-                "reference": "e9258207061602cf4a36320b30e097c3ab27e9fa"
+                "reference": "8eecfa0a88e50ca88c4f30753b4d2337f889d4b2"
             },
             "require": {
                 "ext-curl": "*",
@@ -43,7 +43,7 @@
                 }
             ],
             "description": "PHP clean architecture framework",
-            "time": "2024-12-14T08:17:51+00:00"
+            "time": "2024-12-22T07:39:40+00:00"
         },
         {
             "name": "symfony/deprecation-contracts",
