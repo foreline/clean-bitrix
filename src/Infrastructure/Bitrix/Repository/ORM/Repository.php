@@ -12,11 +12,12 @@ use Domain\Repository\GroupInterface;
 use Domain\Repository\LimitInterface;
 use Domain\Repository\SortInterface;
 use JetBrains\PhpStorm\Deprecated;
+use ReflectionClass;
 
 /**
  * ORM Repository class
  */
-class Repository
+abstract class Repository
 {
     public ?FilterInterface $filter = null;
     public ?SortInterface $sort = null;
@@ -25,6 +26,25 @@ class Repository
     public ?GroupInterface $group = null;
     
     public ?Result $res;
+    
+    /**
+     * Returns class constants
+     * @return array<string, string>
+     */
+    public static function getFields(): array
+    {
+        $reflection = new ReflectionClass(static::class);
+        return $reflection->getConstants();
+    }
+    
+    /**
+     * Returns class constants referencing other Entities
+     * @return array<string, string>
+     */
+    public static function getReferenceFields(): array
+    {
+        return [];
+    }
     
     /**
      * @param iterable $filter
@@ -115,6 +135,47 @@ class Repository
         }
         
         return $preparedFilter;
+    }
+    
+    /**
+     * @param array $selectFields
+     * @return array
+     */
+    public function prepareSelectFields(array $selectFields): array
+    {
+        $preparedFields = [];
+    
+        $fieldsMap = static::getFields();
+        $referenceFields = static::getReferenceFields();
+        
+        foreach ( $selectFields as $key => $field ) {
+    
+            if ( str_contains($field, '.') ) {
+                $fieldName = explode('.', $field)[0];
+            } else {
+                $fieldName = $field;
+            }
+            
+            if ( !in_array($fieldName, $fieldsMap) ) {
+                continue;
+            }
+            
+            if ( in_array($fieldName, $referenceFields) ) {
+                $fieldName .= '_ref';
+            }
+            
+            if ( str_contains($field, '.') ) {
+                $fieldName .= '.' . explode('.', $field)[1];
+            }
+            
+            if ( !is_int($key) ) {
+                $preparedFields[$key] = $fieldName;
+            } else {
+                $preparedFields[] = $fieldName;
+            }
+        }
+        
+        return $preparedFields;
     }
     
 }
