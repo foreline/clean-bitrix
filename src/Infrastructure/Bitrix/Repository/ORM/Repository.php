@@ -155,6 +155,11 @@ abstract class Repository
             } else {
                 $fieldName = $field;
             }
+    
+            if ( '*' === $fieldName ) {
+                $preparedFields[] = '*';
+                continue;
+            }
             
             if ( !in_array($fieldName, $fieldsMap) ) {
                 continue;
