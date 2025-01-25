@@ -47,6 +47,15 @@ abstract class Repository
     }
     
     /**
+     * Returns allowed fields, i.e. 'count'
+     * @return array
+     */
+    public static function getAllowedFields(): array
+    {
+        return [];
+    }
+    
+    /**
      * @param iterable $filter
      * @param iterable $sort
      * @param iterable $limit
@@ -144,24 +153,28 @@ abstract class Repository
     public function prepareSelectFields(array $selectFields): array
     {
         $preparedFields = [];
-    
+        
         $fieldsMap = static::getFields();
         $referenceFields = static::getReferenceFields();
+        $allowedFields = static::getAllowedFields();
         
         foreach ( $selectFields as $key => $field ) {
-    
+            
             if ( str_contains($field, '.') ) {
                 $fieldName = explode('.', $field)[0];
             } else {
                 $fieldName = $field;
             }
-    
+            
             if ( '*' === $fieldName ) {
                 $preparedFields[] = '*';
                 continue;
             }
             
-            if ( !in_array($fieldName, $fieldsMap) ) {
+            if (
+                !in_array($fieldName, $fieldsMap)
+                && !in_array($fieldName, $allowedFields)
+            ) {
                 continue;
             }
             
