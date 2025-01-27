@@ -125,7 +125,7 @@ class UserProxy extends Repository
         }
     
         if ( null !== $secondName = $obj->get(UserRepositoryInterface::SECOND_NAME) ) {
-            $user->setLastName((string)$secondName);
+            $user->setSecondName((string)$secondName);
         }
         
         if ( null !== $active = $obj->get(UserRepositoryInterface::ACTIVE) ) {
