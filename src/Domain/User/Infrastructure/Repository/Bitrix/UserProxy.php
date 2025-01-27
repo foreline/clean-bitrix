@@ -56,6 +56,7 @@ class UserProxy extends Repository
             UserRepositoryInterface::LOGIN      => $user->getLogin(),
             UserRepositoryInterface::NAME       => $user->getFirstName(),
             UserRepositoryInterface::LAST_NAME  => $user->getLastName(),
+            UserRepositoryInterface::SECOND_NAME  => $user->getSecondName(),
             UserRepositoryInterface::EMAIL      => $user->getEmail(),
             UserRepositoryInterface::PHONE      => $user->getPhone(),
             UserRepositoryInterface::ACTIVE     => ( $user->isActive() ? 'Y' : 'N' ),
@@ -103,44 +104,48 @@ class UserProxy extends Repository
     {
         $user = new User();
         
-        if ( null !== $obj->get(UserRepositoryInterface::ID) ) {
-            $user->setId((int)$obj->get(UserRepositoryInterface::ID));
+        if ( null !== $id = $obj->get(UserRepositoryInterface::ID) ) {
+            $user->setId((int)$id);
         }
         
-        if ( null !== $obj->get(UserRepositoryInterface::LOGIN) ) {
-            $user->setLogin((string)$obj->get(UserRepositoryInterface::LOGIN));
+        if ( null !== $login = $obj->get(UserRepositoryInterface::LOGIN) ) {
+            $user->setLogin((string)$login);
         }
         
-        if ( null !== $obj->get(UserRepositoryInterface::EMAIL) ) {
-            $user->setEmail((string)$obj->get(UserRepositoryInterface::EMAIL));
+        if ( null !== $email = $obj->get(UserRepositoryInterface::EMAIL) ) {
+            $user->setEmail((string)$email);
         }
         
-        if ( null !== $obj->get(UserRepositoryInterface::NAME) ) {
-            $user->setFirstName((string)$obj->get(UserRepositoryInterface::NAME));
+        if ( null !== $name = $obj->get(UserRepositoryInterface::NAME) ) {
+            $user->setFirstName((string)$name);
         }
         
-        if ( null !== $obj->get(UserRepositoryInterface::LAST_NAME) ) {
-            $user->setLastName((string)$obj->get(UserRepositoryInterface::LAST_NAME));
+        if ( null !== $lastName = $obj->get(UserRepositoryInterface::LAST_NAME) ) {
+            $user->setLastName((string)$lastName);
+        }
+    
+        if ( null !== $secondName = $obj->get(UserRepositoryInterface::SECOND_NAME) ) {
+            $user->setLastName((string)$secondName);
         }
         
-        if ( null !== $obj->get(UserRepositoryInterface::ACTIVE) ) {
-            $user->setActive((bool)$obj->get(UserRepositoryInterface::ACTIVE));
+        if ( null !== $active = $obj->get(UserRepositoryInterface::ACTIVE) ) {
+            $user->setActive((bool)$active);
         }
         
-        if ( null !== $obj->get(UserRepositoryInterface::PHONE) ) {
-            $user->setPhone((string)$obj->get(UserRepositoryInterface::PHONE));
+        if ( null !== $phone = $obj->get(UserRepositoryInterface::PHONE) ) {
+            $user->setPhone((string)$phone);
         }
         
-        if ( null !== $obj->get(UserRepositoryInterface::DEPARTMENT) ) {
-            $user->setDepartment((string)$obj->get(UserRepositoryInterface::DEPARTMENT));
+        if ( null !== $department = $obj->get(UserRepositoryInterface::DEPARTMENT) ) {
+            $user->setDepartment((string)$department);
         }
         
-        if ( null !== $obj->get(UserRepositoryInterface::POSITION) ) {
-            $user->setPosition((string)$obj->get(UserRepositoryInterface::POSITION));
+        if ( null !== $position = $obj->get(UserRepositoryInterface::POSITION) ) {
+            $user->setPosition((string)$position);
         }
         
-        if ( null !== $obj->get(UserRepositoryInterface::CONFIRM_CODE) ) {
-            $user->setConfirmationCode((string)$obj->get(UserRepositoryInterface::CONFIRM_CODE));
+        if ( null !== $confirmCode = $obj->get(UserRepositoryInterface::CONFIRM_CODE) ) {
+            $user->setConfirmationCode((string)$confirmCode);
         }
         
         /*if ( null !== $obj->get(UserRepositoryInterface::GROUPS) ) {
@@ -150,7 +155,7 @@ class UserProxy extends Repository
         
         // @fixme
         if ( $groupsId = UserTable::getUserGroupIds($user->getId()) ) {
-            $groups = GroupManager::getInstance()
+            $groups = (new GroupManager())
                 ->filterById($groupsId)
                 ->find();
             
