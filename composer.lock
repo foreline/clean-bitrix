@@ -4,15 +4,15 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e19ec2497f2742bc8745abc5c6f38373",
+    "content-hash": "5b5b430a5e8c92c8366960619d30b7d4",
     "packages": [
         {
             "name": "foreline/clean",
-            "version": "v0.5.19",
+            "version": "v0.5.20",
             "source": {
                 "type": "git",
                 "url": "ssh://git@gitlab.foreline.ru:2222/foreline/clean.git",
-                "reference": "583b2b87de964efc6c5b375983f77caa7e02b9e6"
+                "reference": "8ef046cda5b9efae1f8057435e254af42ee0a9f0"
             },
             "require": {
                 "ext-curl": "*",
@@ -43,7 +43,7 @@
                 }
             ],
             "description": "PHP clean architecture framework",
-            "time": "2025-01-27T19:28:22+00:00"
+            "time": "2025-02-02T16:02:28+00:00"
         },
         {
             "name": "symfony/deprecation-contracts",
@@ -114,16 +114,16 @@
         },
         {
             "name": "symfony/http-foundation",
-            "version": "v7.2.2",
+            "version": "v7.2.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/http-foundation.git",
-                "reference": "62d1a43796ca3fea3f83a8470dfe63a4af3bc588"
+                "reference": "ee1b504b8926198be89d05e5b6fc4c3810c090f0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/http-foundation/zipball/62d1a43796ca3fea3f83a8470dfe63a4af3bc588",
-                "reference": "62d1a43796ca3fea3f83a8470dfe63a4af3bc588",
+                "url": "https://api.github.com/repos/symfony/http-foundation/zipball/ee1b504b8926198be89d05e5b6fc4c3810c090f0",
+                "reference": "ee1b504b8926198be89d05e5b6fc4c3810c090f0",
                 "shasum": ""
             },
             "require": {
@@ -172,7 +172,7 @@
             "description": "Defines an object-oriented layer for the HTTP specification",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/http-foundation/tree/v7.2.2"
+                "source": "https://github.com/symfony/http-foundation/tree/v7.2.3"
             },
             "funding": [
                 {
@@ -188,7 +188,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2024-12-30T19:00:17+00:00"
+            "time": "2025-01-17T10:56:55+00:00"
         },
         {
             "name": "symfony/polyfill-mbstring",
