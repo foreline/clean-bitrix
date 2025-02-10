@@ -64,7 +64,7 @@ class UserProxy extends Repository
             UserRepositoryInterface::POSITION       => $user->getPosition(),
             UserRepositoryInterface::CONFIRM_CODE   => $user->getConfirmationCode(),
             UserRepositoryInterface::EXT_ID         => $user->getExtId(),
-            UserRepositoryInterface::AVATAR         => $user->getAvatar()?->getId(),
+            //UserRepositoryInterface::AVATAR         => $user->getAvatar()?->getId(),
             
             // @fixme
             //UserRepositoryInterface::GROUPS => $user->getGroups()?->getIds(),
@@ -88,6 +88,10 @@ class UserProxy extends Repository
         
         if ( !empty($user->getConfirmPassword()) ) {
             $data[UserRepositoryInterface::CONFIRM_PASSWORD] = $user->getConfirmPassword();
+        }
+    
+        if ( $user->getAvatar() ) {
+            $data[UserRepositoryInterface::AVATAR] = \CFile::MakeFileArray($user->getAvatar()->getSource());
         }
         
         return $data;
