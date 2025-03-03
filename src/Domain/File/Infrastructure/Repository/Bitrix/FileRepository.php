@@ -242,11 +242,15 @@ class FileRepository extends FileProxy implements FileRepositoryInterface
      */
     public function delete(int $fileId): bool
     {
-        $result = FileTable::delete($fileId);
+        // not implemented in ORM
+        /*$result = FileTable::delete($fileId);
         
         if ( !$result->isSuccess() ) {
             return false;
-        }
+        }*/
+    
+        \CFile::Delete($fileId);
+    
         return true;
     }
     
