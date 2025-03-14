@@ -158,10 +158,13 @@ class OrmDataManager extends DataManager
                 $connection->query($sqlField);
             }
         }
-        
+    
         if ( $field instanceof IntegerField ) {
             if ( 'int' !== $actualFields[$field->getName()]['Type'] ) {
                 $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY ' . self::getSqlField($field, $connection);
+                if ( $field->isAutocomplete() ) {
+                    $sqlField .= ' AUTO_INCREMENT';
+                }
                 $connection->query($sqlField);
             }
         }
