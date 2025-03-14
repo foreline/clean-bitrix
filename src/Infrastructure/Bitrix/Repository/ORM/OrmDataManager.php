@@ -12,6 +12,7 @@ use Bitrix\Main\DB\SqlQueryException;
 use Bitrix\Main\Entity\Base;
 use Bitrix\Main\Entity\TextField;
 use Bitrix\Main\ORM\Data\DataManager;
+use Bitrix\Main\ORM\Fields\IntegerField;
 use Bitrix\Main\ORM\Fields\StringField;
 use Bitrix\Main\SystemException;
 use Exception;
@@ -153,6 +154,13 @@ class OrmDataManager extends DataManager
         
         if ( $field instanceof StringField ) {
             if ( 'varchar(255)' !== $actualFields[$field->getName()]['Type'] ) {
+                $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY ' . self::getSqlField($field, $connection);
+                $connection->query($sqlField);
+            }
+        }
+        
+        if ( $field instanceof IntegerField ) {
+            if ( 'int' !== $actualFields[$field->getName()]['Type'] ) {
                 $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY ' . self::getSqlField($field, $connection);
                 $connection->query($sqlField);
             }
