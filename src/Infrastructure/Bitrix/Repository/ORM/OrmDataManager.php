@@ -10,8 +10,8 @@ use Bitrix\Main\DB\Connection;
 use Bitrix\Main\DB\Result;
 use Bitrix\Main\DB\SqlQueryException;
 use Bitrix\Main\Entity\Base;
-use Bitrix\Main\Entity\TextField;
 use Bitrix\Main\ORM\Data\DataManager;
+use Bitrix\Main\ORM\Fields\TextField;
 use Bitrix\Main\ORM\Fields\IntegerField;
 use Bitrix\Main\ORM\Fields\StringField;
 use Bitrix\Main\SystemException;
@@ -51,7 +51,7 @@ class OrmDataManager extends DataManager
     public static function checkTable(?LoggerInterface $logger = null): void
     {
         self::$logger = $logger;
-        self::$logger?->debug('checking table `' . Base::getInstance(self::$entityTableClass)->getDBTableName() . '`');
+        //self::$logger->debug('checking table `' . Base::getInstance(self::$entityTableClass)->getDBTableName() . '`');
         self::createTable();
         self::updateTable();
     }
@@ -93,7 +93,7 @@ class OrmDataManager extends DataManager
         $base = Base::getInstance(self::$entityTableClass);
         $connection = $base->getConnection();
         
-        self::$logger?->debug('updating table `' . Base::getInstance(self::$entityTableClass)->getDBTableName() . '`');
+        //self::$logger?->debug('updating table `' . Base::getInstance(self::$entityTableClass)->getDBTableName() . '`');
         
         foreach ( $scalarFields as $field ) {
             self::addField($field, $actualFields, $connection);
@@ -153,6 +153,7 @@ class OrmDataManager extends DataManager
         
         if ( $field instanceof TextField ) {
             if ( 'text' !== $actualFields[$field->getName()]['Type'] ) {
+                
                 $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY ' . self::getSqlField($field, $connection);
                 self::$logger->info($sqlField);
                 $connection->query($sqlField);
@@ -162,6 +163,7 @@ class OrmDataManager extends DataManager
         if ( $field instanceof StringField ) {
             //if ( 'varchar(255)' !== $actualFields[$field->getName()]['Type'] ) {
             if ( !str_starts_with($actualFields[$field->getName()]['Type'], 'varchar') ) {
+                
                 $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY ' . self::getSqlField($field, $connection);
                 self::$logger->info($sqlField);
                 $connection->query($sqlField);
