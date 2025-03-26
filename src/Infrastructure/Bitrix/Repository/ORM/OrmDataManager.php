@@ -16,6 +16,7 @@ use Bitrix\Main\ORM\Fields\IntegerField;
 use Bitrix\Main\ORM\Fields\StringField;
 use Bitrix\Main\SystemException;
 use Exception;
+use Psr\Log\LoggerInterface;
 
 /**
  * Should be extended by EntityTable classes
@@ -23,6 +24,7 @@ use Exception;
  */
 class OrmDataManager extends DataManager
 {
+    private static ?LoggerInterface $logger = null;
     public static string $entityTableClass;
     
     /**
@@ -42,14 +44,14 @@ class OrmDataManager extends DataManager
     
     /**
      * Creates and modifies DB table
+     * @param LoggerInterface|null $logger
      * @return void
-     * @throws ArgumentException
-     * @throws SqlQueryException
-     * @throws SystemException
      * @throws Exception
      */
-    public static function checkTable(): void
+    public static function checkTable(?LoggerInterface $logger = null): void
     {
+        self::$logger = $logger;
+        self::$logger?->debug('checking table `' . Base::getInstance(self::$entityTableClass)->getDBTableName() . '`');
         self::createTable();
         self::updateTable();
     }
@@ -91,6 +93,8 @@ class OrmDataManager extends DataManager
         $base = Base::getInstance(self::$entityTableClass);
         $connection = $base->getConnection();
         
+        self::$logger?->debug('updating table `' . Base::getInstance(self::$entityTableClass)->getDBTableName() . '`');
+        
         foreach ( $scalarFields as $field ) {
             self::addField($field, $actualFields, $connection);
             self::alterField($field, $actualFields, $connection);
@@ -129,6 +133,8 @@ class OrmDataManager extends DataManager
         
         $sqlField = 'ALTER TABLE `' . static::getTableName() . '` ADD ' . self::getSqlField($field, $connection);
         
+        self::$logger?->info($sqlField);
+        
         $connection->query($sqlField);
     }
     
@@ -148,23 +154,28 @@ class OrmDataManager extends DataManager
         if ( $field instanceof TextField ) {
             if ( 'text' !== $actualFields[$field->getName()]['Type'] ) {
                 $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY ' . self::getSqlField($field, $connection);
+                self::$logger->info($sqlField);
                 $connection->query($sqlField);
             }
         }
         
         if ( $field instanceof StringField ) {
-            if ( 'varchar(255)' !== $actualFields[$field->getName()]['Type'] ) {
+            //if ( 'varchar(255)' !== $actualFields[$field->getName()]['Type'] ) {
+            if ( !str_starts_with($actualFields[$field->getName()]['Type'], 'varchar') ) {
                 $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY ' . self::getSqlField($field, $connection);
+                self::$logger->info($sqlField);
                 $connection->query($sqlField);
             }
         }
-    
+        
         if ( $field instanceof IntegerField ) {
-            if ( 'int' !== $actualFields[$field->getName()]['Type'] ) {
+            //if ( 'int' !== $actualFields[$field->getName()]['Type'] ) {
+            if ( !str_starts_with($actualFields[$field->getName()]['Type'], 'int') ) {
                 $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY ' . self::getSqlField($field, $connection);
                 if ( $field->isAutocomplete() ) {
                     $sqlField .= ' AUTO_INCREMENT';
                 }
+                self::$logger->info($sqlField);
                 $connection->query($sqlField);
             }
         }
@@ -191,6 +202,8 @@ class OrmDataManager extends DataManager
         }
         
         $sqlField = 'ALTER TABLE `' . static::getTableName() . '` DROP COLUMN `' . $actualField['Field'] . '`';
+        
+        self::$logger?->info($sqlField);
         
         $connection->query($sqlField);
     }
