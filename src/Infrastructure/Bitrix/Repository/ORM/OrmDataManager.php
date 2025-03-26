@@ -150,6 +150,10 @@ class OrmDataManager extends DataManager
         if ( !self::columnExists($connection, $field->getName()) ) {
             return;
         }
+    
+        if ( !$actualFields[$field->getName()]['Type'] ) {
+            return;
+        }
         
         if ( $field instanceof TextField ) {
             if ( 'text' !== $actualFields[$field->getName()]['Type'] ) {
