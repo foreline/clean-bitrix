@@ -66,6 +66,7 @@ class OrmDataManager extends DataManager
         $tableName = Base::getInstance(self::$entityTableClass)->getDBTableName();
         
         if ( !Application::getConnection($connectionName)->isTableExists($tableName) ) {
+            self::$logger?->info('CREATING TABLE `' . $tableName . '`');
             Base::getInstance(self::$entityTableClass)->createDbTable();
         }
     }
