@@ -151,7 +151,7 @@ class OrmDataManager extends DataManager
         if ( !self::columnExists($connection, $field->getName()) ) {
             return;
         }
-    
+        
         if ( !$actualFields[$field->getName()]['Type'] ) {
             return;
         }
@@ -162,11 +162,13 @@ class OrmDataManager extends DataManager
                 $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY ' . self::getSqlField($field, $connection);
                 self::$logger?->info($sqlField);
                 $connection->query($sqlField);
+            } else {
+                // class TextField extends StringField
+                return;
             }
         }
         
         if ( $field instanceof StringField ) {
-            //if ( 'varchar(255)' !== $actualFields[$field->getName()]['Type'] ) {
             if ( !str_starts_with($actualFields[$field->getName()]['Type'], 'varchar') ) {
                 
                 $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY ' . self::getSqlField($field, $connection);
@@ -176,7 +178,6 @@ class OrmDataManager extends DataManager
         }
         
         if ( $field instanceof IntegerField ) {
-            //if ( 'int' !== $actualFields[$field->getName()]['Type'] ) {
             if ( !str_starts_with($actualFields[$field->getName()]['Type'], 'int') ) {
                 $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY ' . self::getSqlField($field, $connection);
                 if ( $field->isAutocomplete() ) {
