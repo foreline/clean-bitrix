@@ -51,7 +51,7 @@ class OrmDataManager extends DataManager
     public static function checkTable(?LoggerInterface $logger = null): void
     {
         self::$logger = $logger;
-        //self::$logger->debug('checking table `' . Base::getInstance(self::$entityTableClass)->getDBTableName() . '`');
+        //self::$logger?->debug('checking table `' . Base::getInstance(self::$entityTableClass)->getDBTableName() . '`');
         self::createTable();
         self::updateTable();
     }
@@ -160,7 +160,7 @@ class OrmDataManager extends DataManager
             if ( 'text' !== $actualFields[$field->getName()]['Type'] ) {
                 
                 $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY ' . self::getSqlField($field, $connection);
-                self::$logger->info($sqlField);
+                self::$logger?->info($sqlField);
                 $connection->query($sqlField);
             }
         }
@@ -170,7 +170,7 @@ class OrmDataManager extends DataManager
             if ( !str_starts_with($actualFields[$field->getName()]['Type'], 'varchar') ) {
                 
                 $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY ' . self::getSqlField($field, $connection);
-                self::$logger->info($sqlField);
+                self::$logger?->info($sqlField);
                 $connection->query($sqlField);
             }
         }
@@ -182,7 +182,7 @@ class OrmDataManager extends DataManager
                 if ( $field->isAutocomplete() ) {
                     $sqlField .= ' AUTO_INCREMENT';
                 }
-                self::$logger->info($sqlField);
+                self::$logger?->info($sqlField);
                 $connection->query($sqlField);
             }
         }
