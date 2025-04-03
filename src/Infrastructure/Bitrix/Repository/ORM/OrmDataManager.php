@@ -72,7 +72,7 @@ class OrmDataManager extends DataManager
     }
     
     /**
-     * Updates table fields
+     * Updates (add, alter and delete) table fields
      * @return void
      * @throws SqlQueryException
      * @throws SystemException
@@ -217,6 +217,7 @@ class OrmDataManager extends DataManager
     }
     
     /**
+     * Checks if table field exists.
      *
      * @param Connection $connection
      * @param string $columnName
