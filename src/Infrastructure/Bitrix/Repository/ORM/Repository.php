@@ -196,4 +196,45 @@ abstract class Repository
         return $preparedFields;
     }
     
+    /**
+     * @param array $filterFields
+     * @return array
+     */
+    public function prepareFilterFields(array $filterFields): array
+    {
+        $preparedFields = [];
+        
+        $fieldsMap = static::getFields();
+        $referenceFields = static::getReferenceFields();
+        $allowedFields = static::getAllowedFields();
+        
+        foreach ( $filterFields as $field => $fieldValue ) {
+            
+            if ( str_contains($field, '.') ) {
+                $fieldName = explode('.', $field)[0];
+            } else {
+                $fieldName = $field;
+            }
+            
+            if (
+                !in_array($fieldName, $fieldsMap)
+                && !in_array($fieldName, $allowedFields)
+            ) {
+                continue;
+            }
+            
+            if ( in_array($fieldName, $referenceFields) ) {
+                $fieldName .= '_ref';
+            }
+            
+            if ( str_contains($field, '.') ) {
+                $fieldName .= '.' . explode('.', $field)[1];
+            }
+            
+            $preparedFields[$fieldName] = $fieldValue;
+        }
+        
+        return $preparedFields;
+    }
+    
 }
