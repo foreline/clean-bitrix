@@ -1,9 +1,13 @@
-image: centos:stream
+image: php:8.2
 
 stages:
   - build
+  - lint
+  - check
   - test
+#  - deploy
 
+# Install dependencies
 job-composer:
   stage: build
   before_script:
@@ -14,12 +18,28 @@ job-composer:
     - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
     - composer config cache-files-dir $COMPOSER_CACHE_DIR
     - composer install --prefer-dist --no-progress --no-suggest
+    - composer validate
+    - composer audit
+    - composer check-platform-reqs
   artifacts:
     untracked: true
     paths:
       - vendor/
       - composer.lock
+  allow_failure: false
 
+# Run php syntax check
+job-syntax-check:
+  stage: lint
+  before_script:
+    - echo "Running PHP syntax check"
+  script:
+    - find . -name "*.php" -exec php -l {} \;
+  dependencies:
+    - job-composer
+  allow_failure: false
+
+# Run PHPStan code quality analysis
 job-phpstan:
   stage: test
   before_script:
@@ -34,3 +54,12 @@ job-phpstan:
     reports:
       codequality: "./phpstan-report.json"
   allow_failure: true
+
+# Run PHPUnit tests
+job-test:
+  stage: test
+  before_script:
+    - echo "Running PHPUnit Test Job"
+    - ls -lha
+  script:
+    - php ./vendor/bin/phpunit tests
