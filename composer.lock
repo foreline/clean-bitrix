@@ -4,15 +4,15 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "77d6d46746407a658044d3bc2d56a6ad",
+    "content-hash": "05f14c1f4a9ffbdff81c870b7d5da43c",
     "packages": [
         {
             "name": "foreline/clean",
-            "version": "v0.5.50",
+            "version": "v0.5.51",
             "source": {
                 "type": "git",
                 "url": "ssh://git@gitlab.foreline.ru:2222/foreline/clean.git",
-                "reference": "edaafe6d7ecdf87a1a3b2cd017e3e7fe452113ba"
+                "reference": "4ae0c0ea8453ea308073688bd23763df60b40da7"
             },
             "require": {
                 "ext-curl": "*",
@@ -53,7 +53,7 @@
                 }
             ],
             "description": "PHP clean architecture framework",
-            "time": "2025-05-05T12:08:49+00:00"
+            "time": "2025-05-05T13:30:43+00:00"
         },
         {
             "name": "foreline/clean-ui",
