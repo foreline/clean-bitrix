@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "53dfcb5b8fb790a732d2818a4abb5ffd",
+    "content-hash": "77d6d46746407a658044d3bc2d56a6ad",
     "packages": [
         {
             "name": "foreline/clean",
@@ -57,14 +57,14 @@
         },
         {
             "name": "foreline/clean-ui",
-            "version": "v0.5.02",
+            "version": "v0.5.03",
             "source": {
                 "type": "git",
                 "url": "ssh://git@gitlab.foreline.ru:2222/foreline/clean-ui.git",
-                "reference": "a63a04513f3e381060875cab651362b75531b2d0"
+                "reference": "faf36458b3976b290b143f7743ace41e4af03d6f"
             },
             "require": {
-                "foreline/clean": "^0.5.49",
+                "foreline/clean": "^0.5.50",
                 "php": ">=8.0",
                 "symfony/http-foundation": ">6.3"
             },
@@ -92,7 +92,7 @@
                 }
             ],
             "description": "UI library for clean framework",
-            "time": "2025-05-05T11:34:15+00:00"
+            "time": "2025-05-05T12:44:10+00:00"
         },
         {
             "name": "symfony/deprecation-contracts",
