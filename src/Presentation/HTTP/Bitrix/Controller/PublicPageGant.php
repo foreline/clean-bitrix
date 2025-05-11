@@ -39,7 +39,7 @@ class PublicPageGant extends PublicPageController
                 $APPLICATION->IncludeComponent(self::$appName . ':menu', '', []);
             }
             
-            if ( 'custom' === $_ENV['SERVICEDESK_BITRIX_TEMPLATE'] ) {
+            if ( 'custom' === $_ENV['BITRIX_TEMPLATE'] ) {
                 echo '<div class="px-3 border clearfix d-flex bg-light pagetitle-inner-container">';
                 echo '<div class="pagetitle"><h1>' . $APPLICATION->GetTitle() . '</h1></div>';
                 $APPLICATION->ShowViewContent('inside_pagetitle');
