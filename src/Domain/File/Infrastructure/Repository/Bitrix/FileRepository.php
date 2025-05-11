@@ -30,9 +30,16 @@ class FileRepository extends FileProxy implements FileRepositoryInterface
     /** @var string  */
     private string $uploadDir;
     
+    /** @var string Bitrix MODULE_ID */
+    private string $moduleId;
+    
+    /** @var FileFilter  */
     public FileFilter $filter;
+    /** @var FileFields  */
     public FileFields $fields;
+    /** @var FileLimit  */
     public FileLimit $limit;
+    /** @var FileSort  */
     public FileSort $sort;
     
     /**
@@ -46,8 +53,28 @@ class FileRepository extends FileProxy implements FileRepositoryInterface
         $this->filter   = new FileFilter($service);
         $this->limit    = new FileLimit($service);
         $this->fields   = new FileFields($service);
+        
+        $this->moduleId = $_ENV['BITRIX_MODULE_ID'] ?? '';
     }
-
+    
+    /**
+     * @return string
+     */
+    public function getModuleId(): string
+    {
+        return $this->moduleId;
+    }
+    
+    /**
+     * @param string $moduleId
+     * @return FileRepository
+     */
+    public function setModuleId(string $moduleId): FileRepository
+    {
+        $this->moduleId = $moduleId;
+        return $this;
+    }
+    
     /**
      * Returns class constants
      * @return array<string, string>
@@ -149,6 +176,7 @@ class FileRepository extends FileProxy implements FileRepositoryInterface
             'size'          => $file->getSize(),
             'tmp_name'      => $file->getTmpName(),
             'description'   => $file->getDescription(),
+            'MODULE_ID'     => $this->getModuleId(),
         ];
         
         if ( $file->isRemoved() ) {
@@ -248,9 +276,9 @@ class FileRepository extends FileProxy implements FileRepositoryInterface
         if ( !$result->isSuccess() ) {
             return false;
         }*/
-    
-        \CFile::Delete($fileId);
-    
+        
+        CFile::Delete($fileId);
+        
         return true;
     }
     
