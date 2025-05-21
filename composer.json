@@ -10,8 +10,8 @@
     }
   ],
   "require": {
-    "php": ">=8.0",
-    "foreline/clean": "0.5.53",
+    "php": ">=8.1",
+    "foreline/clean": "0.5.54",
     "foreline/clean-ui": "^0.5.03",
     "webmozart/assert": "^1.11",
     "symfony/http-foundation": ">6.3",
