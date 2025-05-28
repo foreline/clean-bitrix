@@ -104,7 +104,8 @@ abstract class Repository
             $fields = ['*'];
         }
         
-        $params['select'] = $fields;
+        //$params['select'] = $fields;
+        $params['select'] = $this->prepareSelectFields($fields);
         
         if ( $this->group ) {
             $params['group'] = $this->group->get();
