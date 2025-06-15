@@ -11,8 +11,8 @@
   ],
   "require": {
     "php": ">=8.1",
-    "foreline/clean": "0.5.55",
-    "foreline/clean-ui": "^0.5.03",
+    "foreline/clean": "0.6.01",
+    "foreline/clean-ui": "^0.6.01",
     "webmozart/assert": "^1.11",
     "symfony/http-foundation": ">6.3",
     "ext-curl": "*"
