@@ -91,6 +91,30 @@ class OrmDataManager extends DataManager
             $actualFields[$tableField['Field']] = $tableField;
         }
         
+        /** @var string[] names of indexes */
+        $actualConstraints = [];
+        
+        $query = '
+        SELECT
+            TABLE_SCHEMA,
+            TABLE_NAME,
+            INDEX_NAME,
+            COLUMN_NAME,
+            SEQ_IN_INDEX,
+            CARDINALITY,
+            NULLABLE
+        FROM INFORMATION_SCHEMA.STATISTICS
+        WHERE
+            TABLE_SCHEMA = "' . $connection->getDatabase() . '"
+            AND TABLE_NAME = "' . static::getTableName() . '"
+        ORDER BY TABLE_SCHEMA, TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX;';
+        
+        $indexResult = $result = $connection->query($query);
+        
+        while ( $index = $indexResult->fetch() ) {
+            $actualConstraints[$index['INDEX_NAME']] = $index;
+        }
+        
         $base = Base::getInstance(self::$entityTableClass);
         $connection = $base->getConnection();
         
@@ -99,10 +123,15 @@ class OrmDataManager extends DataManager
         foreach ( $scalarFields as $field ) {
             self::addField($field, $actualFields, $connection);
             self::alterField($field, $actualFields, $connection);
+            self::addConstraint($field, $actualConstraints, $connection);
         }
         
         foreach ( $actualFields as $actualField ) {
             self::deleteField($actualField, $scalarFields, $connection);
+        }
+        
+        foreach ( $actualConstraints as $actualConstraint ) {
+            self::deleteConstraint($actualConstraint, $scalarFields, $connection);
         }
     }
     
@@ -133,6 +162,30 @@ class OrmDataManager extends DataManager
         }
         
         $sqlField = 'ALTER TABLE `' . static::getTableName() . '` ADD ' . self::getSqlField($field, $connection);
+        
+        self::$logger?->info($sqlField);
+        
+        $connection->query($sqlField);
+    }
+    
+    /**
+     * @param mixed $field
+     * @param array $actualConstraints
+     * @param Connection $connection
+     * @return void
+     * @throws SqlQueryException
+     */
+    public static function addConstraint(mixed $field, array $actualConstraints, Connection $connection): void
+    {
+        if ( array_key_exists($field->getName(), $actualConstraints) ) {
+            return;
+        }
+        
+        if ( !$field->isUnique() ) {
+            return;
+        }
+        
+        $sqlField = 'ALTER TABLE `' . static::getTableName() . '` ADD UNIQUE KEY `' . $field->getName() . '` (`' . $field->getName() . '`) ';
         
         self::$logger?->info($sqlField);
         
@@ -210,6 +263,30 @@ class OrmDataManager extends DataManager
         }
         
         $sqlField = 'ALTER TABLE `' . static::getTableName() . '` DROP COLUMN `' . $actualField['Field'] . '`';
+        
+        self::$logger?->info($sqlField);
+        
+        $connection->query($sqlField);
+    }
+    
+    /**
+     * @param array $actualField
+     * @param mixed $scalarFields
+     * @param Connection $connection
+     * @return void
+     * @throws SqlQueryException
+     */
+    public static function deleteConstraint(array $actualConstraint, mixed $scalarFields, Connection $connection): void
+    {
+        if ( array_key_exists($actualConstraint['COLUMN_NAME'], $scalarFields) ) {
+            return;
+        }
+        
+        if ( !self::columnExists($connection, $actualField['Field']) ) {
+            return;
+        }
+        
+        $sqlField = 'ALTER TABLE `' . static::getTableName() . '` DROP KEY `' . $actualField['Field'] . '`';
         
         self::$logger?->info($sqlField);
         
