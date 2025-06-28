@@ -15,7 +15,8 @@
     "foreline/clean-ui": "^0.6.01",
     "webmozart/assert": "^1.11",
     "symfony/http-foundation": ">6.3",
-    "ext-curl": "*"
+    "ext-curl": "*",
+    "predis/predis": "^3.0"
   },
   "require-dev": {
     "phpunit/phpunit": "^9.6",
