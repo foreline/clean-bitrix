@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "72b305cc7aeec0b59cf46191a42bdd05",
+    "content-hash": "211dee92658d1729a6084cf97223018e",
     "packages": [
         {
             "name": "brick/math",
@@ -68,11 +68,11 @@
         },
         {
             "name": "foreline/clean",
-            "version": "v0.6.01",
+            "version": "v0.6.02",
             "source": {
                 "type": "git",
                 "url": "ssh://git@gitlab.foreline.ru:2222/foreline/clean.git",
-                "reference": "81917748052290e994228fa504d6f0911148e4c9"
+                "reference": "245434c4b1af1b1ac914e72a50c547ced5dd8658"
             },
             "require": {
                 "ext-curl": "*",
@@ -114,7 +114,7 @@
                 }
             ],
             "description": "PHP clean architecture framework",
-            "time": "2025-06-15T07:32:48+00:00"
+            "time": "2025-07-02T11:01:46+00:00"
         },
         {
             "name": "foreline/clean-ui",
@@ -349,21 +349,20 @@
         },
         {
             "name": "ramsey/uuid",
-            "version": "4.8.1",
+            "version": "4.9.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ramsey/uuid.git",
-                "reference": "fdf4dd4e2ff1813111bd0ad58d7a1ddbb5b56c28"
+                "reference": "4e0e23cc785f0724a0e838279a9eb03f28b092a0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ramsey/uuid/zipball/fdf4dd4e2ff1813111bd0ad58d7a1ddbb5b56c28",
-                "reference": "fdf4dd4e2ff1813111bd0ad58d7a1ddbb5b56c28",
+                "url": "https://api.github.com/repos/ramsey/uuid/zipball/4e0e23cc785f0724a0e838279a9eb03f28b092a0",
+                "reference": "4e0e23cc785f0724a0e838279a9eb03f28b092a0",
                 "shasum": ""
             },
             "require": {
                 "brick/math": "^0.8.8 || ^0.9 || ^0.10 || ^0.11 || ^0.12 || ^0.13",
-                "ext-json": "*",
                 "php": "^8.0",
                 "ramsey/collection": "^1.2 || ^2.0"
             },
@@ -422,9 +421,9 @@
             ],
             "support": {
                 "issues": "https://github.com/ramsey/uuid/issues",
-                "source": "https://github.com/ramsey/uuid/tree/4.8.1"
+                "source": "https://github.com/ramsey/uuid/tree/4.9.0"
             },
-            "time": "2025-06-01T06:28:46+00:00"
+            "time": "2025-06-25T14:20:11+00:00"
         },
         {
             "name": "symfony/deprecation-contracts",
@@ -495,16 +494,16 @@
         },
         {
             "name": "symfony/http-foundation",
-            "version": "v7.3.0",
+            "version": "v7.3.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/http-foundation.git",
-                "reference": "4236baf01609667d53b20371486228231eb135fd"
+                "reference": "23dd60256610c86a3414575b70c596e5deff6ed9"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/http-foundation/zipball/4236baf01609667d53b20371486228231eb135fd",
-                "reference": "4236baf01609667d53b20371486228231eb135fd",
+                "url": "https://api.github.com/repos/symfony/http-foundation/zipball/23dd60256610c86a3414575b70c596e5deff6ed9",
+                "reference": "23dd60256610c86a3414575b70c596e5deff6ed9",
                 "shasum": ""
             },
             "require": {
@@ -554,7 +553,7 @@
             "description": "Defines an object-oriented layer for the HTTP specification",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/http-foundation/tree/v7.3.0"
+                "source": "https://github.com/symfony/http-foundation/tree/v7.3.1"
             },
             "funding": [
                 {
@@ -570,7 +569,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2025-05-12T14:48:23+00:00"
+            "time": "2025-06-23T15:07:14+00:00"
         },
         {
             "name": "symfony/polyfill-mbstring",
