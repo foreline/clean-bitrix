@@ -122,7 +122,7 @@ abstract class Bxd7
     /** @var array Типы свойств инфоблока */
     private array $properties = [];
     
-    private ?Result $result = null;
+    protected ?Result $result = null;
     
     protected string $iblockCode = '';
     protected string $iblockTypeId = '';
