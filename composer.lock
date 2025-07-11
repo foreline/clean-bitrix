@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d704e952ab986f610e67a2443b71ed68",
+    "content-hash": "1d3a3bcc93acb3d330eb6be96c517f87",
     "packages": [
         {
             "name": "brick/math",
@@ -68,11 +68,11 @@
         },
         {
             "name": "foreline/clean",
-            "version": "v0.6.03",
+            "version": "v0.6.04",
             "source": {
                 "type": "git",
                 "url": "ssh://git@gitlab.foreline.ru:2222/foreline/clean.git",
-                "reference": "608234c89acbffdc55f4c5bc61d109acaabc0d97"
+                "reference": "612682dbf0cb1ed0d1acda01c5fc77f38a99bdea"
             },
             "require": {
                 "ext-curl": "*",
@@ -114,7 +114,7 @@
                 }
             ],
             "description": "PHP clean architecture framework",
-            "time": "2025-07-02T12:17:01+00:00"
+            "time": "2025-07-11T10:03:08+00:00"
         },
         {
             "name": "foreline/clean-ui",
@@ -902,16 +902,16 @@
         },
         {
             "name": "myclabs/deep-copy",
-            "version": "1.13.1",
+            "version": "1.13.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/myclabs/DeepCopy.git",
-                "reference": "1720ddd719e16cf0db4eb1c6eca108031636d46c"
+                "reference": "faed855a7b5f4d4637717c2b3863e277116beb36"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/myclabs/DeepCopy/zipball/1720ddd719e16cf0db4eb1c6eca108031636d46c",
-                "reference": "1720ddd719e16cf0db4eb1c6eca108031636d46c",
+                "url": "https://api.github.com/repos/myclabs/DeepCopy/zipball/faed855a7b5f4d4637717c2b3863e277116beb36",
+                "reference": "faed855a7b5f4d4637717c2b3863e277116beb36",
                 "shasum": ""
             },
             "require": {
@@ -950,7 +950,7 @@
             ],
             "support": {
                 "issues": "https://github.com/myclabs/DeepCopy/issues",
-                "source": "https://github.com/myclabs/DeepCopy/tree/1.13.1"
+                "source": "https://github.com/myclabs/DeepCopy/tree/1.13.3"
             },
             "funding": [
                 {
@@ -958,7 +958,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2025-04-29T12:36:36+00:00"
+            "time": "2025-07-05T12:25:42+00:00"
         },
         {
             "name": "nikic/php-parser",
