@@ -45,7 +45,7 @@ class FileRepository extends FileProxy implements FileRepositoryInterface
     /**
      *
      */
-    public function __construct(?ServiceInterface $service = null)
+    public function __construct(?ServiceInterface $service = null, ?string $moduleId = null)
     {
         $this->uploadDir = COption::GetOptionString('main', 'upload_dir', 'upload');
         
@@ -54,7 +54,7 @@ class FileRepository extends FileProxy implements FileRepositoryInterface
         $this->limit    = new FileLimit($service);
         $this->fields   = new FileFields($service);
         
-        $this->moduleId = $_ENV['BITRIX_MODULE_ID'] ?? '';
+        $this->moduleId = $_ENV['BITRIX_MODULE_ID'] ?? $moduleId ?? '';
     }
     
     /**
@@ -185,7 +185,9 @@ class FileRepository extends FileProxy implements FileRepositoryInterface
             $data['old_file'] = $file->getId();
         }
         
-        if ( !$fileId = CFile::SaveFile($data, 'files'/*, checkDuplicates: false*/) ) {
+        $savePath = $this->getModuleId() ?: 'files';
+        
+        if ( !$fileId = CFile::SaveFile($data, $savePath/*, checkDuplicates: false*/) ) {
             throw new Exception('Ошибка при регистрации файла');
         }
         
