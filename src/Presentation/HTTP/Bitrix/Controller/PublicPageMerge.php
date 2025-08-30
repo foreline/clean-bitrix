@@ -68,7 +68,7 @@ class PublicPageMerge extends PublicPageController
                     'USE_PADDING' => false,
                     'USE_LINK_TARGETS_REPLACING' => true,
                     'USE_UI_TOOLBAR' => 'Y',
-                    'BUTTONS' => ['close'],
+                    //'BUTTONS' => ['close'],
                 ]
             );
             
