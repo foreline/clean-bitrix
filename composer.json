@@ -12,7 +12,7 @@
   "require": {
     "php": ">=8.1",
     "foreline/clean": "0.6.09",
-    "foreline/clean-ui": "^0.6.01",
+    "foreline/clean-ui": "^0.6.02",
     "webmozart/assert": "^1.11",
     "symfony/http-foundation": ">6.3",
     "ext-curl": "*",
