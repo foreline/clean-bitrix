@@ -332,7 +332,86 @@ class OrmDataManager extends DataManager
         sort($actualPrimaryKeys);
         
         if ( $expectedPrimaryKeys !== $actualPrimaryKeys ) {
+            // Clean up invalid data before adding primary key
+            self::cleanupPrimaryKeyData($expectedPrimaryKeys, $connection);
             self::updatePrimaryKey($expectedPrimaryKeys, $connection);
+        }
+    }
+    
+    /**
+     * Cleans up invalid data that would prevent primary key creation
+     * @param array $primaryKeyFields
+     * @param Connection $connection
+     * @return void
+     * @throws SqlQueryException
+     */
+    public static function cleanupPrimaryKeyData(array $primaryKeyFields, Connection $connection): void
+    {
+        if ( empty($primaryKeyFields) ) {
+            return;
+        }
+        
+        $tableName = static::getTableName();
+        
+        // For single column primary keys, handle common issues
+        if ( count($primaryKeyFields) === 1 ) {
+            $pkField = $primaryKeyFields[0];
+            
+            // Step 1: Fix NULL values in primary key field
+            $sqlFixNulls = "UPDATE `{$tableName}` SET `{$pkField}` = 0 WHERE `{$pkField}` IS NULL";
+            self::$logger?->info("Fixing NULL values: {$sqlFixNulls}");
+            $connection->query($sqlFixNulls);
+            
+            // Step 2: Handle duplicate values by updating them with unique IDs
+            $sqlFindDuplicates = "
+                SELECT `{$pkField}`, COUNT(*) as count
+                FROM `{$tableName}`
+                GROUP BY `{$pkField}`
+                HAVING COUNT(*) > 1
+                ORDER BY `{$pkField}`
+            ";
+            
+            $duplicatesResult = $connection->query($sqlFindDuplicates);
+            
+            while ( $duplicate = $duplicatesResult->fetch() ) {
+                $duplicateValue = $duplicate[$pkField];
+                self::$logger?->info("Found duplicate {$pkField} value: {$duplicateValue}");
+                
+                // Get the maximum existing ID to start from
+                $maxIdResult = $connection->query("SELECT MAX(`{$pkField}`) as max_id FROM `{$tableName}`");
+                $maxId = $maxIdResult->fetch()['max_id'] ?? 0;
+                
+                // Update duplicate rows except the first one
+                $sqlUpdateDuplicates = "
+                    UPDATE `{$tableName}` t1
+                    INNER JOIN (
+                        SELECT `{$pkField}`, ROW_NUMBER() OVER (PARTITION BY `{$pkField}` ORDER BY `{$pkField}`) as rn
+                        FROM `{$tableName}`
+                        WHERE `{$pkField}` = {$duplicateValue}
+                    ) t2 ON t1.`{$pkField}` = t2.`{$pkField}`
+                    SET t1.`{$pkField}` = {$maxId} + t2.rn
+                    WHERE t2.rn > 1
+                ";
+                
+                self::$logger?->info("Fixing duplicates for {$pkField} = {$duplicateValue}");
+                
+                try {
+                    $connection->query($sqlUpdateDuplicates);
+                } catch ( SqlQueryException $e ) {
+                    // Fallback to simpler approach if ROW_NUMBER is not available
+                    self::$logger?->warning("ROW_NUMBER approach failed, using simpler method: " . $e->getMessage());
+                    
+                    // Simple approach: just increment from max ID
+                    $newId = $maxId + 1;
+                    $sqlSimpleUpdate = "
+                        UPDATE `{$tableName}`
+                        SET `{$pkField}` = {$newId}
+                        WHERE `{$pkField}` = {$duplicateValue}
+                        LIMIT 1, 999999
+                    ";
+                    $connection->query($sqlSimpleUpdate);
+                }
+            }
         }
     }
     
