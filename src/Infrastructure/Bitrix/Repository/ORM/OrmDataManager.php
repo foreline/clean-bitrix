@@ -14,6 +14,9 @@ use Bitrix\Main\ORM\Data\DataManager;
 use Bitrix\Main\ORM\Fields\TextField;
 use Bitrix\Main\ORM\Fields\IntegerField;
 use Bitrix\Main\ORM\Fields\StringField;
+use Bitrix\Main\ORM\Fields\DateTimeField;
+use Bitrix\Main\ORM\Fields\BooleanField;
+use Bitrix\Main\ORM\Fields\FloatField;
 use Bitrix\Main\SystemException;
 use Exception;
 use Psr\Log\LoggerInterface;
@@ -109,7 +112,7 @@ class OrmDataManager extends DataManager
             AND TABLE_NAME = "' . static::getTableName() . '"
         ORDER BY TABLE_SCHEMA, TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX;';
         
-        $indexResult = $result = $connection->query($query);
+        $indexResult = $connection->query($query);
         
         while ( $index = $indexResult->fetch() ) {
             $actualConstraints[$index['INDEX_NAME']] = $index;
@@ -133,6 +136,13 @@ class OrmDataManager extends DataManager
         foreach ( $actualConstraints as $actualConstraint ) {
             self::deleteConstraint($actualConstraint, $scalarFields, $connection);
         }
+        
+        // Handle primary key constraints FIRST
+        $actualPrimaryKeys = self::getActualPrimaryKeys($connection);
+        self::managePrimaryKeys($scalarFields, $actualPrimaryKeys, $connection);
+        
+        // Handle AUTO_INCREMENT after primary keys are established
+        self::manageAutoIncrement($scalarFields, $actualFields, $connection);
     }
     
     /**
@@ -205,44 +215,49 @@ class OrmDataManager extends DataManager
             return;
         }
         
-        if ( !$actualFields[$field->getName()]['Type'] ) {
+        if ( !array_key_exists($field->getName(), $actualFields) ) {
             return;
         }
         
+        if ( !isset($actualFields[$field->getName()]['Type']) ) {
+            return;
+        }
+        
+        $actualType = $actualFields[$field->getName()]['Type'];
+        $shouldModify = false;
+        
         if ( $field instanceof TextField ) {
-            if ( 'text' !== $actualFields[$field->getName()]['Type'] ) {
-                
-                $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY ' . self::getSqlField($field, $connection);
-                self::$logger?->info($sqlField);
-                $connection->query($sqlField);
-            } else {
-                // class TextField extends StringField
-                return;
+            if ( 'text' !== $actualType && 'longtext' !== $actualType ) {
+                $shouldModify = true;
+            }
+        } elseif ( $field instanceof StringField ) {
+            if ( !str_starts_with($actualType, 'varchar') && !str_starts_with($actualType, 'char') ) {
+                $shouldModify = true;
+            }
+        } elseif ( $field instanceof IntegerField ) {
+            if ( !str_starts_with($actualType, 'int') && !str_starts_with($actualType, 'bigint') && !str_starts_with($actualType, 'smallint') && !str_starts_with($actualType, 'tinyint') ) {
+                $shouldModify = true;
+            }
+        } elseif ( $field instanceof DateTimeField ) {
+            if ( 'datetime' !== $actualType && 'timestamp' !== $actualType ) {
+                $shouldModify = true;
+            }
+        } elseif ( $field instanceof BooleanField ) {
+            if ( 'tinyint(1)' !== $actualType && !str_starts_with($actualType, 'tinyint') ) {
+                $shouldModify = true;
+            }
+        } elseif ( $field instanceof FloatField ) {
+            if ( !str_starts_with($actualType, 'float') && !str_starts_with($actualType, 'double') && !str_starts_with($actualType, 'decimal') ) {
+                $shouldModify = true;
             }
         }
         
-        if ( $field instanceof StringField ) {
-            if ( !str_starts_with($actualFields[$field->getName()]['Type'], 'varchar') ) {
-                
-                $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY ' . self::getSqlField($field, $connection);
-                self::$logger?->info($sqlField);
-                $connection->query($sqlField);
-            }
+        if ( $shouldModify ) {
+            $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY ' . self::getSqlField($field, $connection);
+            
+            self::$logger?->info($sqlField);
+            $connection->query($sqlField);
         }
-        
-        if ( $field instanceof IntegerField ) {
-            if ( !str_starts_with($actualFields[$field->getName()]['Type'], 'int') ) {
-                $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY ' . self::getSqlField($field, $connection);
-                if ( $field->isAutocomplete() ) {
-                    $sqlField .= ' AUTO_INCREMENT';
-                }
-                self::$logger?->info($sqlField);
-                $connection->query($sqlField);
-            }
-        }
-        
-        // @fixme @todo for other Fields
-        
     }
     
     /**
@@ -270,7 +285,7 @@ class OrmDataManager extends DataManager
     }
     
     /**
-     * @param array $actualField
+     * @param array $actualConstraint
      * @param mixed $scalarFields
      * @param Connection $connection
      * @return void
@@ -282,15 +297,152 @@ class OrmDataManager extends DataManager
             return;
         }
         
-        if ( !self::columnExists($connection, $actualField['Field']) ) {
+        if ( !self::columnExists($connection, $actualConstraint['COLUMN_NAME']) ) {
             return;
         }
         
-        $sqlField = 'ALTER TABLE `' . static::getTableName() . '` DROP KEY `' . $actualField['Field'] . '`';
+        $sqlField = 'ALTER TABLE `' . static::getTableName() . '` DROP KEY `' . $actualConstraint['INDEX_NAME'] . '`';
         
         self::$logger?->info($sqlField);
         
         $connection->query($sqlField);
+    }
+    
+    /**
+     * Checks and manages primary key constraints for fields
+     * @param mixed $scalarFields
+     * @param array $actualPrimaryKeys
+     * @param Connection $connection
+     * @return void
+     * @throws SqlQueryException
+     */
+    public static function managePrimaryKeys(mixed $scalarFields, array $actualPrimaryKeys, Connection $connection): void
+    {
+        $expectedPrimaryKeys = [];
+        
+        // Collect all expected primary key fields
+        foreach ( $scalarFields as $field ) {
+            if ( $field->isPrimary() ) {
+                $expectedPrimaryKeys[] = $field->getName();
+            }
+        }
+        
+        // Check if primary key structure has changed
+        sort($expectedPrimaryKeys);
+        sort($actualPrimaryKeys);
+        
+        if ( $expectedPrimaryKeys !== $actualPrimaryKeys ) {
+            self::updatePrimaryKey($expectedPrimaryKeys, $connection);
+        }
+    }
+    
+    /**
+     * Updates the primary key constraint for the table
+     * @param array $primaryKeyFields
+     * @param Connection $connection
+     * @return void
+     * @throws SqlQueryException
+     */
+    public static function updatePrimaryKey(array $primaryKeyFields, Connection $connection): void
+    {
+        // Drop existing primary key if it exists
+        try {
+            $sqlDropPrimary = 'ALTER TABLE `' . static::getTableName() . '` DROP PRIMARY KEY';
+            self::$logger?->info($sqlDropPrimary);
+            $connection->query($sqlDropPrimary);
+        } catch ( SqlQueryException $e ) {
+            // Primary key might not exist, which is fine
+            self::$logger?->debug('Could not drop primary key (might not exist): ' . $e->getMessage());
+        }
+        
+        // Add new primary key if fields are specified
+        if ( !empty($primaryKeyFields) ) {
+            $keyFields = array_map(function($field) {
+                return '`' . $field . '`';
+            }, $primaryKeyFields);
+            
+            $sqlAddPrimary = 'ALTER TABLE `' . static::getTableName() . '` ADD PRIMARY KEY (' . implode(', ', $keyFields) . ')';
+            self::$logger?->info($sqlAddPrimary);
+            $connection->query($sqlAddPrimary);
+        }
+    }
+    
+    /**
+     * Gets the current primary key fields from the database
+     * @param Connection $connection
+     * @return array
+     * @throws SqlQueryException
+     */
+    public static function getActualPrimaryKeys(Connection $connection): array
+    {
+        $primaryKeys = [];
+        
+        $query = '
+        SELECT COLUMN_NAME
+        FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+        WHERE
+            TABLE_SCHEMA = "' . addslashes($connection->getDatabase()) . '"
+            AND TABLE_NAME = "' . addslashes(static::getTableName()) . '"
+            AND CONSTRAINT_NAME = "PRIMARY"
+        ORDER BY ORDINAL_POSITION;';
+        
+        $result = $connection->query($query);
+        
+        while ( $row = $result->fetch() ) {
+            $primaryKeys[] = $row['COLUMN_NAME'];
+        }
+        
+        return $primaryKeys;
+    }
+    
+    /**
+     * Manages AUTO_INCREMENT for fields that need it
+     * @param mixed $scalarFields
+     * @param array $actualFields
+     * @param Connection $connection
+     * @return void
+     * @throws SqlQueryException
+     */
+    public static function manageAutoIncrement(mixed $scalarFields, array $actualFields, Connection $connection): void
+    {
+        foreach ( $scalarFields as $field ) {
+            if ( $field instanceof IntegerField && $field->isAutocomplete() ) {
+                self::setAutoIncrement($field, $actualFields, $connection);
+            }
+        }
+    }
+    
+    /**
+     * Sets AUTO_INCREMENT on a specific field
+     * @param IntegerField $field
+     * @param array $actualFields
+     * @param Connection $connection
+     * @return void
+     * @throws SqlQueryException
+     */
+    public static function setAutoIncrement(IntegerField $field, array $actualFields, Connection $connection): void
+    {
+        if ( !array_key_exists($field->getName(), $actualFields) ) {
+            return; // Field doesn't exist
+        }
+        
+        // Check if field already has AUTO_INCREMENT
+        $extra = $actualFields[$field->getName()]['Extra'] ?? '';
+        if ( str_contains(strtolower($extra), 'auto_increment') ) {
+            return; // Already has AUTO_INCREMENT
+        }
+        
+        // Set AUTO_INCREMENT (this requires the field to be a key)
+        $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY ' . self::getSqlField($field, $connection) . ' AUTO_INCREMENT';
+        
+        self::$logger?->info($sqlField);
+        
+        try {
+            $connection->query($sqlField);
+        } catch ( SqlQueryException $e ) {
+            // Log the error but don't fail - AUTO_INCREMENT might not be possible
+            self::$logger?->error('Could not set AUTO_INCREMENT on field ' . $field->getName() . ': ' . $e->getMessage());
+        }
     }
     
     /**
