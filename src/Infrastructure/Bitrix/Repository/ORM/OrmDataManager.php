@@ -243,7 +243,7 @@ class OrmDataManager extends DataManager
                 $shouldModify = true;
             }
         } elseif ( $field instanceof BooleanField ) {
-            if ( 'tinyint(1)' !== $actualType && !str_starts_with($actualType, 'tinyint') ) {
+            if ( 'varchar(1)' !== $actualType && !str_starts_with($actualType, 'varchar(1)') ) {
                 $shouldModify = true;
             }
         } elseif ( $field instanceof FloatField ) {
