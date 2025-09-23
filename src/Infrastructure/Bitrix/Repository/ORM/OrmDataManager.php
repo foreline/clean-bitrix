@@ -157,6 +157,9 @@ class OrmDataManager extends DataManager
         // Handle external reference string field indexes for performance optimization
         $externalReferenceFields = self::getExternalReferenceStringFields($allFields);
         self::manageExternalReferenceStringFieldIndexes($externalReferenceFields, $actualConstraints, $connection);
+        
+        // Handle composite indexes for specific performance optimizations
+        self::manageCompositeIndexes($actualConstraints, $connection);
     }
     
     /**
@@ -800,6 +803,82 @@ class OrmDataManager extends DataManager
             // Create index if it doesn't exist
             if (!$indexExists && self::columnExists($connection, $fieldName)) {
                 self::addExternalReferenceStringFieldIndex($fieldName, $connection);
+            }
+        }
+    }
+    
+    /**
+     * Gets composite indexes that should be created for performance optimization
+     * Override this method in specific table classes to define table-specific composite indexes
+     * @return array Array of composite index definitions
+     */
+    public static function getCompositeIndexes(): array
+    {
+        return [];
+    }
+    
+    /**
+     * Creates a composite index
+     * @param string $indexName
+     * @param array $columns
+     * @param Connection $connection
+     * @return void
+     * @throws SqlQueryException
+     */
+    public static function addCompositeIndex(string $indexName, array $columns, Connection $connection): void
+    {
+        $tableName = static::getTableName();
+        $columnList = '`' . implode('`, `', $columns) . '`';
+        
+        $sql = "ALTER TABLE `{$tableName}` ADD INDEX `{$indexName}` ({$columnList})";
+        
+        self::$logger?->info("Adding composite index: {$sql}");
+        
+        try {
+            $connection->query($sql);
+            self::$logger?->info("Successfully created composite index {$indexName} on {$tableName}");
+        } catch (SqlQueryException $e) {
+            self::$logger?->error("Failed to create composite index {$indexName}: " . $e->getMessage());
+            // Don't throw exception to prevent breaking table updates for non-critical indexes
+        }
+    }
+    
+    /**
+     * Manages composite indexes for performance optimization
+     * @param array $actualIndexes
+     * @param Connection $connection
+     * @return void
+     * @throws SqlQueryException
+     */
+    public static function manageCompositeIndexes(array $actualIndexes, Connection $connection): void
+    {
+        $compositeIndexes = static::getCompositeIndexes();
+        
+        foreach ($compositeIndexes as $indexDefinition) {
+            $indexName = $indexDefinition['name'];
+            $columns = $indexDefinition['columns'];
+            
+            // Check if index already exists by name
+            $indexExists = false;
+            foreach ($actualIndexes as $actualIndex) {
+                if ($actualIndex['INDEX_NAME'] === $indexName) {
+                    $indexExists = true;
+                    break;
+                }
+            }
+            
+            // Verify all columns exist before creating index
+            $allColumnsExist = true;
+            foreach ($columns as $column) {
+                if (!self::columnExists($connection, $column)) {
+                    $allColumnsExist = false;
+                    break;
+                }
+            }
+            
+            // Create index if it doesn't exist and all columns exist
+            if (!$indexExists && $allColumnsExist) {
+                self::addCompositeIndex($indexName, $columns, $connection);
             }
         }
     }
