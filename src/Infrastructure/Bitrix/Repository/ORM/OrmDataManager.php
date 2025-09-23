@@ -149,6 +149,10 @@ class OrmDataManager extends DataManager
         $allFields = Base::getInstance(self::$entityTableClass)->getFields();
         $foreignKeyFields = self::getForeignKeyFields($allFields);
         self::manageForeignKeyIndexes($foreignKeyFields, $actualConstraints, $connection);
+        
+        // Handle boolean field indexes for performance optimization
+        $booleanFields = self::getBooleanFields($allFields);
+        self::manageBooleanFieldIndexes($booleanFields, $actualConstraints, $connection);
     }
     
     /**
@@ -590,6 +594,24 @@ class OrmDataManager extends DataManager
     }
     
     /**
+     * Detects boolean fields that need indexes for performance optimization
+     * @param array $allFields All fields from getMap()
+     * @return array Array of field names that are boolean fields
+     */
+    public static function getBooleanFields(array $allFields): array
+    {
+        $booleanFields = [];
+        
+        foreach ($allFields as $field) {
+            if ($field instanceof BooleanField) {
+                $booleanFields[] = $field->getName();
+            }
+        }
+        
+        return $booleanFields;
+    }
+    
+    /**
      * Creates an index for a foreign key field
      * @param string $fieldName
      * @param Connection $connection
@@ -610,6 +632,31 @@ class OrmDataManager extends DataManager
             self::$logger?->info("Successfully created index {$indexName} on {$tableName}.{$fieldName}");
         } catch (SqlQueryException $e) {
             self::$logger?->error("Failed to create index {$indexName}: " . $e->getMessage());
+            // Don't throw exception to prevent breaking table updates for non-critical indexes
+        }
+    }
+    
+    /**
+     * Creates an index for a boolean field
+     * @param string $fieldName
+     * @param Connection $connection
+     * @return void
+     * @throws SqlQueryException
+     */
+    public static function addBooleanFieldIndex(string $fieldName, Connection $connection): void
+    {
+        $indexName = 'IDX_BOOL_' . $fieldName;
+        $tableName = static::getTableName();
+        
+        $sql = "ALTER TABLE `{$tableName}` ADD INDEX `{$indexName}` (`{$fieldName}`)";
+        
+        self::$logger?->info("Adding boolean field index: {$sql}");
+        
+        try {
+            $connection->query($sql);
+            self::$logger?->info("Successfully created boolean index {$indexName} on {$tableName}.{$fieldName}");
+        } catch (SqlQueryException $e) {
+            self::$logger?->error("Failed to create boolean index {$indexName}: " . $e->getMessage());
             // Don't throw exception to prevent breaking table updates for non-critical indexes
         }
     }
@@ -640,6 +687,36 @@ class OrmDataManager extends DataManager
             // Create index if it doesn't exist
             if (!$indexExists && self::columnExists($connection, $fieldName)) {
                 self::addForeignKeyIndex($fieldName, $connection);
+            }
+        }
+    }
+    
+    /**
+     * Manages indexes for boolean fields
+     * @param array $booleanFields
+     * @param array $actualIndexes
+     * @param Connection $connection
+     * @return void
+     * @throws SqlQueryException
+     */
+    public static function manageBooleanFieldIndexes(array $booleanFields, array $actualIndexes, Connection $connection): void
+    {
+        foreach ($booleanFields as $fieldName) {
+            $indexName = 'IDX_BOOL_' . $fieldName;
+            
+            // Check if index already exists
+            $indexExists = false;
+            foreach ($actualIndexes as $actualIndex) {
+                if ($actualIndex['INDEX_NAME'] === $indexName &&
+                    $actualIndex['COLUMN_NAME'] === $fieldName) {
+                    $indexExists = true;
+                    break;
+                }
+            }
+            
+            // Create index if it doesn't exist
+            if (!$indexExists && self::columnExists($connection, $fieldName)) {
+                self::addBooleanFieldIndex($fieldName, $connection);
             }
         }
     }
