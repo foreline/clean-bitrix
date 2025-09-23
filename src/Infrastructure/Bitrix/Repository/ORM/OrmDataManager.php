@@ -153,6 +153,10 @@ class OrmDataManager extends DataManager
         // Handle boolean field indexes for performance optimization
         $booleanFields = self::getBooleanFields($allFields);
         self::manageBooleanFieldIndexes($booleanFields, $actualConstraints, $connection);
+        
+        // Handle external reference string field indexes for performance optimization
+        $externalReferenceFields = self::getExternalReferenceStringFields($allFields);
+        self::manageExternalReferenceStringFieldIndexes($externalReferenceFields, $actualConstraints, $connection);
     }
     
     /**
@@ -612,6 +616,30 @@ class OrmDataManager extends DataManager
     }
     
     /**
+     * Detects external reference string fields that need indexes for performance optimization
+     * @param array $allFields All fields from getMap()
+     * @return array Array of field names that are external reference string fields
+     */
+    public static function getExternalReferenceStringFields(array $allFields): array
+    {
+        $externalReferenceFields = [];
+        
+        // Define patterns for external reference fields
+        $externalReferencePatterns = ['source_id', 'ext_id'];
+        
+        foreach ($allFields as $field) {
+            if ($field instanceof StringField) {
+                $fieldName = $field->getName();
+                if (in_array($fieldName, $externalReferencePatterns, true)) {
+                    $externalReferenceFields[] = $fieldName;
+                }
+            }
+        }
+        
+        return $externalReferenceFields;
+    }
+    
+    /**
      * Creates an index for a foreign key field
      * @param string $fieldName
      * @param Connection $connection
@@ -657,6 +685,31 @@ class OrmDataManager extends DataManager
             self::$logger?->info("Successfully created boolean index {$indexName} on {$tableName}.{$fieldName}");
         } catch (SqlQueryException $e) {
             self::$logger?->error("Failed to create boolean index {$indexName}: " . $e->getMessage());
+            // Don't throw exception to prevent breaking table updates for non-critical indexes
+        }
+    }
+    
+    /**
+     * Creates an index for an external reference string field
+     * @param string $fieldName
+     * @param Connection $connection
+     * @return void
+     * @throws SqlQueryException
+     */
+    public static function addExternalReferenceStringFieldIndex(string $fieldName, Connection $connection): void
+    {
+        $indexName = 'IDX_EXT_' . $fieldName;
+        $tableName = static::getTableName();
+        
+        $sql = "ALTER TABLE `{$tableName}` ADD INDEX `{$indexName}` (`{$fieldName}`)";
+        
+        self::$logger?->info("Adding external reference string field index: {$sql}");
+        
+        try {
+            $connection->query($sql);
+            self::$logger?->info("Successfully created external reference index {$indexName} on {$tableName}.{$fieldName}");
+        } catch (SqlQueryException $e) {
+            self::$logger?->error("Failed to create external reference index {$indexName}: " . $e->getMessage());
             // Don't throw exception to prevent breaking table updates for non-critical indexes
         }
     }
@@ -717,6 +770,36 @@ class OrmDataManager extends DataManager
             // Create index if it doesn't exist
             if (!$indexExists && self::columnExists($connection, $fieldName)) {
                 self::addBooleanFieldIndex($fieldName, $connection);
+            }
+        }
+    }
+    
+    /**
+     * Manages indexes for external reference string fields
+     * @param array $externalReferenceFields
+     * @param array $actualIndexes
+     * @param Connection $connection
+     * @return void
+     * @throws SqlQueryException
+     */
+    public static function manageExternalReferenceStringFieldIndexes(array $externalReferenceFields, array $actualIndexes, Connection $connection): void
+    {
+        foreach ($externalReferenceFields as $fieldName) {
+            $indexName = 'IDX_EXT_' . $fieldName;
+            
+            // Check if index already exists
+            $indexExists = false;
+            foreach ($actualIndexes as $actualIndex) {
+                if ($actualIndex['INDEX_NAME'] === $indexName &&
+                    $actualIndex['COLUMN_NAME'] === $fieldName) {
+                    $indexExists = true;
+                    break;
+                }
+            }
+            
+            // Create index if it doesn't exist
+            if (!$indexExists && self::columnExists($connection, $fieldName)) {
+                self::addExternalReferenceStringFieldIndex($fieldName, $connection);
             }
         }
     }
