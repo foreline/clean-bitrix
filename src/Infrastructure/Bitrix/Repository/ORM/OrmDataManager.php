@@ -17,6 +17,7 @@ use Bitrix\Main\ORM\Fields\StringField;
 use Bitrix\Main\ORM\Fields\DateTimeField;
 use Bitrix\Main\ORM\Fields\BooleanField;
 use Bitrix\Main\ORM\Fields\FloatField;
+use Bitrix\Main\ORM\Fields\Relations\Reference;
 use Bitrix\Main\SystemException;
 use Exception;
 use Psr\Log\LoggerInterface;
@@ -143,6 +144,11 @@ class OrmDataManager extends DataManager
         
         // Handle AUTO_INCREMENT after primary keys are established
         self::manageAutoIncrement($scalarFields, $actualFields, $connection);
+        
+        // Handle foreign key indexes AFTER primary keys and constraints
+        $allFields = Base::getInstance(self::$entityTableClass)->getFields();
+        $foreignKeyFields = self::getForeignKeyFields($allFields);
+        self::manageForeignKeyIndexes($foreignKeyFields, $actualConstraints, $connection);
     }
     
     /**
@@ -552,5 +558,89 @@ class OrmDataManager extends DataManager
         }
         
         return (bool) $fetch;
+    }
+    
+    /**
+     * Detects foreign key fields that need indexes
+     * @param array $allFields All fields from getMap()
+     * @return array Array of field names that are foreign keys
+     */
+    public static function getForeignKeyFields(array $allFields): array
+    {
+        $foreignKeyFields = [];
+        
+        foreach ($allFields as $field) {
+            // Skip if not an IntegerField or StringField (foreign keys can be both)
+            if (!($field instanceof IntegerField) && !($field instanceof StringField)) {
+                continue;
+            }
+            
+            // Check if there's a corresponding Reference field
+            $referenceFieldName = $field->getName() . '_ref';
+            foreach ($allFields as $otherField) {
+                if ($otherField->getName() === $referenceFieldName &&
+                    $otherField instanceof Reference) {
+                    $foreignKeyFields[] = $field->getName();
+                    break;
+                }
+            }
+        }
+        
+        return $foreignKeyFields;
+    }
+    
+    /**
+     * Creates an index for a foreign key field
+     * @param string $fieldName
+     * @param Connection $connection
+     * @return void
+     * @throws SqlQueryException
+     */
+    public static function addForeignKeyIndex(string $fieldName, Connection $connection): void
+    {
+        $indexName = 'IDX_' . $fieldName;
+        $tableName = static::getTableName();
+        
+        $sql = "ALTER TABLE `{$tableName}` ADD INDEX `{$indexName}` (`{$fieldName}`)";
+        
+        self::$logger?->info("Adding foreign key index: {$sql}");
+        
+        try {
+            $connection->query($sql);
+            self::$logger?->info("Successfully created index {$indexName} on {$tableName}.{$fieldName}");
+        } catch (SqlQueryException $e) {
+            self::$logger?->error("Failed to create index {$indexName}: " . $e->getMessage());
+            // Don't throw exception to prevent breaking table updates for non-critical indexes
+        }
+    }
+    
+    /**
+     * Manages indexes for foreign key fields
+     * @param array $foreignKeyFields
+     * @param array $actualIndexes
+     * @param Connection $connection
+     * @return void
+     * @throws SqlQueryException
+     */
+    public static function manageForeignKeyIndexes(array $foreignKeyFields, array $actualIndexes, Connection $connection): void
+    {
+        foreach ($foreignKeyFields as $fieldName) {
+            $indexName = 'IDX_' . $fieldName;
+            
+            // Check if index already exists
+            $indexExists = false;
+            foreach ($actualIndexes as $actualIndex) {
+                if ($actualIndex['INDEX_NAME'] === $indexName &&
+                    $actualIndex['COLUMN_NAME'] === $fieldName) {
+                    $indexExists = true;
+                    break;
+                }
+            }
+            
+            // Create index if it doesn't exist
+            if (!$indexExists && self::columnExists($connection, $fieldName)) {
+                self::addForeignKeyIndex($fieldName, $connection);
+            }
+        }
     }
 }
