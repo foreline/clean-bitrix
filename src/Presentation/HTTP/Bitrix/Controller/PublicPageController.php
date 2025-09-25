@@ -12,4 +12,6 @@ class PublicPageController extends Controller
 {
     public static string $urlPrefix = '/';
     public static string $appName = '';
+    /** @var string[] */
+    public static array $filesToInclude = [];
 }

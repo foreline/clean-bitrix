@@ -31,6 +31,12 @@ class PublicPageReport extends PublicPageController
             
             echo '<script src="' . self::$urlPrefix . '/js/script.js" type="module"></script>';
             Asset::getInstance()->addCss(self::$urlPrefix . '/css/style.css');
+    
+            foreach ( self::$filesToInclude as $file  ) {
+                if ( file_exists($file) ) {
+                    require_once $file;
+                }
+            }
             
             global $APPLICATION;
             if ( 'bootstrap' !== $_ENV['MENU_TEMPLATE'] ) {
