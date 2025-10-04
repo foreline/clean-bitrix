@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Infrastructure\Bitrix\Repository\ORM;
 
-use Bitrix\Main\ArgumentException;
 use Bitrix\Main\DB\Result;
 use Bitrix\Main\ORM\Fields\ExpressionField;
 use Domain\Repository\FieldsInterface;
@@ -126,19 +125,38 @@ abstract class Repository
             
             if ( 'condition' === $key || 'CONDITION' === $key ) {
                 
-                $logic = mb_strtoupper($value['LOGIC']);
-                unset($value['LOGIC']);
-                
-                $cond = [];
-                $cond['LOGIC'] = $logic;
-                
-                foreach ( $value as $k => $v ) {
-                    $cond[$k] = $v;
+                if ( is_array($value) ) {
+                    
+                    foreach ( $value as $conditionValue ) {
+                        $logic = mb_strtoupper($conditionValue['LOGIC']);
+                        unset($conditionValue['LOGIC']);
+                        
+                        $cond = [];
+                        $cond['LOGIC'] = $logic;
+                        
+                        foreach ( $conditionValue as $k => $v ) {
+                            $cond[$k] = $v;
+                        }
+                        
+                        $preparedFilter[] = $cond;
+                    }
+                    
+                } else {
+                    $logic = mb_strtoupper($value['LOGIC']);
+                    unset($value['LOGIC']);
+                    
+                    $cond = [];
+                    $cond['LOGIC'] = $logic;
+                    
+                    foreach ( $value as $k => $v ) {
+                        $cond[$k] = $v;
+                    }
+                    
+                    $preparedFilter[] = $cond;
                 }
                 
-                $preparedFilter[] = $cond;
-                
                 continue;
+                
             }
             
             $preparedFilter[$key] = $value;
