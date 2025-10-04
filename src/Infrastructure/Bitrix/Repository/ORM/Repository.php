@@ -125,7 +125,8 @@ abstract class Repository
             
             if ( 'condition' === $key || 'CONDITION' === $key ) {
                 
-                if ( is_array($value) ) {
+                //if ( is_array($value) ) {
+                if ( !isset($value['LOGIC']) ) {
                     
                     foreach ( $value as $conditionValue ) {
                         $logic = mb_strtoupper($conditionValue['LOGIC']);
