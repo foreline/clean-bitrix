@@ -5,10 +5,10 @@ namespace Presentation\HTTP\Bitrix\Controller;
 
 use Bitrix\Main\Page\Asset;
 use Bitrix\Main\UI\Extension;
+use CComponentEngine;
 use CJSCore;
 use Domain\Event\Publisher;
 use Domain\Events\ExceptionOccurredEvent;
-use Exception;
 use Throwable;
 
 /**
@@ -91,5 +91,16 @@ class PublicPageList extends PublicPageController
         }
         
         require_once $_SERVER['DOCUMENT_ROOT'] . '/bitrix/footer.php';
+    }
+    
+    /**
+     * @param string $componentName
+     * @return bool
+     */
+    private function isComponentExists(string $componentName): bool
+    {
+        $componentPath = CComponentEngine::MakeComponentPath($componentName);
+        $componentPath = getLocalPath('components' . $componentPath /*. '/class.php'*/);
+        return ( $componentPath !== false && file_exists($_SERVER['DOCUMENT_ROOT'] . $componentPath) );
     }
 }
