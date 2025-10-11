@@ -64,6 +64,10 @@ class PublicPageList extends PublicPageController
                 ) .
                 $entityName .
                 '.list';
+    
+            if ( !$this->isComponentExists($componentName) ) {
+                $componentName = self::$appName . ':' . $moduleName . '.tiles';
+            }
             
             $APPLICATION->IncludeComponent(
                 'bitrix:ui.sidepanel.wrapper',
