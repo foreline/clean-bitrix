@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "de5a4354841c6184e27a41db99e8d8a1",
+    "content-hash": "f4fbaac1f88dd7e73fbd0427f6ff2791",
     "packages": [
         {
             "name": "brick/math",
@@ -185,11 +185,11 @@
         },
         {
             "name": "foreline/clean-ui",
-            "version": "v0.6.03",
+            "version": "v0.6.04",
             "source": {
                 "type": "git",
                 "url": "ssh://git@gitlab.foreline.ru:2222/foreline/clean-ui.git",
-                "reference": "c1133d042c6c012b297480fe14021817724acf63"
+                "reference": "4f17ca903a29b389f5215d8d4f07633eda9cd5a0"
             },
             "require": {
                 "foreline/clean": "^0.6.01",
@@ -220,7 +220,7 @@
                 }
             ],
             "description": "UI library for clean framework",
-            "time": "2025-09-14T06:55:08+00:00"
+            "time": "2025-10-18T06:46:29+00:00"
         },
         {
             "name": "foreline/io-response",
