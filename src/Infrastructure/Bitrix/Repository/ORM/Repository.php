@@ -212,6 +212,28 @@ abstract class Repository
                 $preparedFields[] = $fieldName;
             }
         }
+    
+        /*
+         * If the sort field is a reference, we need to select all reference fields with `_ref.*`.
+         * Otherwise only sorted reference field will be selected.
+         */
+        foreach ( $this->sort->get() as $sortField => $sortOrder ) {
+            if ( str_contains($sortField, '.') ) {
+                $sortFieldName = explode('.', $sortField)[0];
+            } else {
+                $sortFieldName = $sortField;
+            }
+        
+            $sortFieldName = str_replace('_ref', '', $sortFieldName);
+        
+            if ( in_array($sortFieldName, $referenceFields) ) {
+                $refFieldSelect = $sortFieldName . '_ref.*';
+            
+                if ( !in_array($refFieldSelect, $preparedFields, true) ) {
+                    $preparedFields[] = $refFieldSelect;
+                }
+            }
+        }
         
         return $preparedFields;
     }
