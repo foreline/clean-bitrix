@@ -33,6 +33,8 @@ class FileRepository extends FileProxy implements FileRepositoryInterface
     /** @var string Bitrix MODULE_ID */
     private string $moduleId;
     
+    private int $count = 0;
+    
     /** @var FileFilter  */
     public FileFilter $filter;
     /** @var FileFields  */
@@ -144,6 +146,10 @@ class FileRepository extends FileProxy implements FileRepositoryInterface
         }
         
         $this->result = FileTable::getList($params);
+        
+        if ( $this->result ) {
+            $this->count = $this->result->getCount();
+        }
         
         return $this;
     }
@@ -315,7 +321,7 @@ class FileRepository extends FileProxy implements FileRepositoryInterface
      */
     public function getTotalCount(): int
     {
-        return $this->result->getCount();
+        return $this->count;
     }
     
     /**
