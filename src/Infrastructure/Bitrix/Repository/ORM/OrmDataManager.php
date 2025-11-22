@@ -30,6 +30,8 @@ class OrmDataManager extends DataManager
 {
     private static ?LoggerInterface $logger = null;
     public static string $entityTableClass;
+    private static bool $dryRun = false;
+    private static array $detectedChanges = [];
     
     /**
      * @throws Exception
@@ -47,6 +49,28 @@ class OrmDataManager extends DataManager
     }
     
     /**
+     * Detect what changes would be made without applying them
+     * @param LoggerInterface|null $logger
+     * @return array Array of detected changes
+     * @throws Exception
+     */
+    public static function detectChanges(?LoggerInterface $logger = null): array
+    {
+        self::$logger = $logger;
+        self::$dryRun = true;
+        self::$detectedChanges = [];
+        
+        try {
+            self::createTable();
+            self::updateTable();
+        } finally {
+            self::$dryRun = false;
+        }
+        
+        return self::$detectedChanges;
+    }
+    
+    /**
      * Creates and modifies DB table
      * @param LoggerInterface|null $logger
      * @return void
@@ -55,6 +79,8 @@ class OrmDataManager extends DataManager
     public static function checkTable(?LoggerInterface $logger = null): void
     {
         self::$logger = $logger;
+        self::$dryRun = false;
+        self::$detectedChanges = [];
         //self::$logger?->debug('checking table `' . Base::getInstance(self::$entityTableClass)->getDBTableName() . '`');
         self::createTable();
         self::updateTable();
@@ -70,8 +96,18 @@ class OrmDataManager extends DataManager
         $tableName = Base::getInstance(self::$entityTableClass)->getDBTableName();
         
         if ( !Application::getConnection($connectionName)->isTableExists($tableName) ) {
-            self::$logger?->info('CREATING TABLE `' . $tableName . '`');
-            Base::getInstance(self::$entityTableClass)->createDbTable();
+            $message = 'CREATING TABLE `' . $tableName . '`';
+            self::$logger?->info($message);
+            
+            if (self::$dryRun) {
+                self::$detectedChanges[] = [
+                    'type' => 'create_table',
+                    'table' => $tableName,
+                    'message' => $message,
+                ];
+            } else {
+                Base::getInstance(self::$entityTableClass)->createDbTable();
+            }
         }
     }
     
@@ -192,7 +228,16 @@ class OrmDataManager extends DataManager
         
         self::$logger?->info($sqlField);
         
-        $connection->query($sqlField);
+        if (self::$dryRun) {
+            self::$detectedChanges[] = [
+                'type' => 'add_field',
+                'table' => static::getTableName(),
+                'field' => $field->getName(),
+                'sql' => $sqlField,
+            ];
+        } else {
+            $connection->query($sqlField);
+        }
     }
     
     /**
@@ -216,7 +261,16 @@ class OrmDataManager extends DataManager
         
         self::$logger?->info($sqlField);
         
-        $connection->query($sqlField);
+        if (self::$dryRun) {
+            self::$detectedChanges[] = [
+                'type' => 'add_constraint',
+                'table' => static::getTableName(),
+                'field' => $field->getName(),
+                'sql' => $sqlField,
+            ];
+        } else {
+            $connection->query($sqlField);
+        }
     }
     
     /**
@@ -273,7 +327,17 @@ class OrmDataManager extends DataManager
             $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY ' . self::getSqlField($field, $connection);
             
             self::$logger?->info($sqlField);
-            $connection->query($sqlField);
+            
+            if (self::$dryRun) {
+                self::$detectedChanges[] = [
+                    'type' => 'modify_field',
+                    'table' => static::getTableName(),
+                    'field' => $field->getName(),
+                    'sql' => $sqlField,
+                ];
+            } else {
+                $connection->query($sqlField);
+            }
         }
     }
     
@@ -298,7 +362,16 @@ class OrmDataManager extends DataManager
         
         self::$logger?->info($sqlField);
         
-        $connection->query($sqlField);
+        if (self::$dryRun) {
+            self::$detectedChanges[] = [
+                'type' => 'drop_field',
+                'table' => static::getTableName(),
+                'field' => $actualField['Field'],
+                'sql' => $sqlField,
+            ];
+        } else {
+            $connection->query($sqlField);
+        }
     }
     
     /**
@@ -322,7 +395,16 @@ class OrmDataManager extends DataManager
         
         self::$logger?->info($sqlField);
         
-        $connection->query($sqlField);
+        if (self::$dryRun) {
+            self::$detectedChanges[] = [
+                'type' => 'drop_constraint',
+                'table' => static::getTableName(),
+                'constraint' => $actualConstraint['INDEX_NAME'],
+                'sql' => $sqlField,
+            ];
+        } else {
+            $connection->query($sqlField);
+        }
     }
     
     /**
