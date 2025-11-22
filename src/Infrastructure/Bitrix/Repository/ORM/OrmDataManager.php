@@ -61,8 +61,8 @@ class OrmDataManager extends DataManager
         self::$detectedChanges = [];
         
         try {
-            self::createTable();
-            self::updateTable();
+            static::createTable();
+            static::updateTable();
         } finally {
             self::$dryRun = false;
         }
@@ -82,8 +82,8 @@ class OrmDataManager extends DataManager
         self::$dryRun = false;
         self::$detectedChanges = [];
         //self::$logger?->debug('checking table `' . Base::getInstance(self::$entityTableClass)->getDBTableName() . '`');
-        self::createTable();
-        self::updateTable();
+        static::createTable();
+        static::updateTable();
     }
     
     /**
@@ -92,8 +92,8 @@ class OrmDataManager extends DataManager
      */
     public static function createTable(): void
     {
-        $connectionName = self::getConnectionName();
-        $tableName = Base::getInstance(self::$entityTableClass)->getDBTableName();
+        $connectionName = static::getConnectionName();
+        $tableName = static::getTableName();
         
         if ( !Application::getConnection($connectionName)->isTableExists($tableName) ) {
             $message = 'CREATING TABLE `' . $tableName . '`';
@@ -106,7 +106,7 @@ class OrmDataManager extends DataManager
                     'message' => $message,
                 ];
             } else {
-                Base::getInstance(self::$entityTableClass)->createDbTable();
+                static::getEntity()->createDbTable();
             }
         }
     }
@@ -120,10 +120,16 @@ class OrmDataManager extends DataManager
      */
     public static function updateTable(): void
     {
-        $scalarFields = Base::getInstance(self::$entityTableClass)->getScalarFields();
-        
         $connection = Application::getConnection();
-        $result = $connection->query('DESCRIBE `' . static::getTableName() . '`');
+        $tableName = static::getTableName();
+        
+        // Skip if table doesn't exist yet (will be created by createTable())
+        if (!$connection->isTableExists($tableName)) {
+            return;
+        }
+        
+        $scalarFields = static::getEntity()->getScalarFields();
+        $result = $connection->query('DESCRIBE `' . $tableName . '`');
         
         $actualFields = [];
         
@@ -155,10 +161,10 @@ class OrmDataManager extends DataManager
             $actualConstraints[$index['INDEX_NAME']] = $index;
         }
         
-        $base = Base::getInstance(self::$entityTableClass);
+        $base = static::getEntity();
         $connection = $base->getConnection();
         
-        //self::$logger?->debug('updating table `' . Base::getInstance(self::$entityTableClass)->getDBTableName() . '`');
+        //self::$logger?->debug('updating table `' . static::getEntity()->getDBTableName() . '`');
         
         foreach ( $scalarFields as $field ) {
             self::addField($field, $actualFields, $connection);
@@ -182,7 +188,7 @@ class OrmDataManager extends DataManager
         self::manageAutoIncrement($scalarFields, $actualFields, $connection);
         
         // Handle foreign key indexes AFTER primary keys and constraints
-        $allFields = Base::getInstance(self::$entityTableClass)->getFields();
+        $allFields = static::getEntity()->getFields();
         $foreignKeyFields = self::getForeignKeyFields($allFields);
         self::manageForeignKeyIndexes($foreignKeyFields, $actualConstraints, $connection);
         
@@ -192,11 +198,7 @@ class OrmDataManager extends DataManager
         
         // Handle external reference string field indexes for performance optimization
         $externalReferenceFields = self::getExternalReferenceStringFields($allFields);
-        self::manageExternalReferenceStringFieldIndexes(
-            $externalReferenceFields,
-            $actualConstraints,
-            $connection
-        );
+        self::manageExternalReferenceStringFieldIndexes($externalReferenceFields, $actualConstraints, $connection);
         
         // Handle composite indexes for specific performance optimizations
         self::manageCompositeIndexes($actualConstraints, $connection);
@@ -228,9 +230,7 @@ class OrmDataManager extends DataManager
             return;
         }
         
-        $sqlField =
-            'ALTER TABLE `' . static::getTableName() .
-            '` ADD ' . self::getSqlField($field, $connection);
+        $sqlField = 'ALTER TABLE `' . static::getTableName() . '` ADD ' . self::getSqlField($field, $connection);
         
         self::$logger?->info($sqlField);
         
@@ -263,9 +263,7 @@ class OrmDataManager extends DataManager
             return;
         }
         
-        $sqlField =
-            'ALTER TABLE `' . static::getTableName() .
-            '` ADD UNIQUE KEY `' . $field->getName() . '` (`' . $field->getName() . '`) ';
+        $sqlField = 'ALTER TABLE `' . static::getTableName() . '` ADD UNIQUE KEY `' . $field->getName() . '` (`' . $field->getName() . '`) ';
         
         self::$logger?->info($sqlField);
         
@@ -314,12 +312,7 @@ class OrmDataManager extends DataManager
                 $shouldModify = true;
             }
         } elseif ( $field instanceof IntegerField ) {
-            if (
-                !str_starts_with($actualType, 'int')
-                && !str_starts_with($actualType, 'bigint')
-                && !str_starts_with($actualType, 'smallint')
-                && !str_starts_with($actualType, 'tinyint')
-            ) {
+            if ( !str_starts_with($actualType, 'int') && !str_starts_with($actualType, 'bigint') && !str_starts_with($actualType, 'smallint') && !str_starts_with($actualType, 'tinyint') ) {
                 $shouldModify = true;
             }
         } elseif ( $field instanceof DateTimeField ) {
@@ -331,18 +324,13 @@ class OrmDataManager extends DataManager
                 $shouldModify = true;
             }
         } elseif ( $field instanceof FloatField ) {
-            if (
-                !str_starts_with($actualType, 'float')
-                && !str_starts_with($actualType, 'double')
-                && !str_starts_with($actualType, 'decimal')
-            ) {
+            if ( !str_starts_with($actualType, 'float') && !str_starts_with($actualType, 'double') && !str_starts_with($actualType, 'decimal') ) {
                 $shouldModify = true;
             }
         }
         
         if ( $shouldModify ) {
-            $sqlField = 'ALTER TABLE `' . static::getTableName() .
-                '` MODIFY ' . self::getSqlField($field, $connection);
+            $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY ' . self::getSqlField($field, $connection);
             
             self::$logger?->info($sqlField);
             
@@ -433,11 +421,7 @@ class OrmDataManager extends DataManager
      * @return void
      * @throws SqlQueryException
      */
-    public static function managePrimaryKeys(
-        mixed $scalarFields,
-        array $actualPrimaryKeys,
-        Connection $connection
-    ): void
+    public static function managePrimaryKeys(mixed $scalarFields, array $actualPrimaryKeys, Connection $connection): void
     {
         $expectedPrimaryKeys = [];
         
@@ -561,8 +545,7 @@ class OrmDataManager extends DataManager
                 return '`' . $field . '`';
             }, $primaryKeyFields);
             
-            $sqlAddPrimary = 'ALTER TABLE `' . static::getTableName() .
-                '` ADD PRIMARY KEY (' . implode(', ', $keyFields) . ')';
+            $sqlAddPrimary = 'ALTER TABLE `' . static::getTableName() . '` ADD PRIMARY KEY (' . implode(', ', $keyFields) . ')';
             self::$logger?->info($sqlAddPrimary);
             $connection->query($sqlAddPrimary);
         }
@@ -634,9 +617,7 @@ class OrmDataManager extends DataManager
         }
         
         // Set AUTO_INCREMENT (this requires the field to be a key)
-        $sqlField =
-            'ALTER TABLE `' . static::getTableName() .
-            '` MODIFY ' . self::getSqlField($field, $connection) . ' AUTO_INCREMENT';
+        $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY ' . self::getSqlField($field, $connection) . ' AUTO_INCREMENT';
         
         self::$logger?->info($sqlField);
         
@@ -832,11 +813,7 @@ class OrmDataManager extends DataManager
      * @return void
      * @throws SqlQueryException
      */
-    public static function manageForeignKeyIndexes(
-        array $foreignKeyFields,
-        array $actualIndexes,
-        Connection $connection
-    ): void
+    public static function manageForeignKeyIndexes(array $foreignKeyFields, array $actualIndexes, Connection $connection): void
     {
         foreach ($foreignKeyFields as $fieldName) {
             $indexName = 'IDX_' . $fieldName;
@@ -866,11 +843,7 @@ class OrmDataManager extends DataManager
      * @return void
      * @throws SqlQueryException
      */
-    public static function manageBooleanFieldIndexes(
-        array $booleanFields,
-        array $actualIndexes,
-        Connection $connection
-    ): void
+    public static function manageBooleanFieldIndexes(array $booleanFields, array $actualIndexes, Connection $connection): void
     {
         foreach ($booleanFields as $fieldName) {
             $indexName = 'IDX_BOOL_' . $fieldName;
@@ -900,11 +873,7 @@ class OrmDataManager extends DataManager
      * @return void
      * @throws SqlQueryException
      */
-    public static function manageExternalReferenceStringFieldIndexes(
-        array $externalReferenceFields,
-        array $actualIndexes,
-        Connection $connection
-    ): void
+    public static function manageExternalReferenceStringFieldIndexes(array $externalReferenceFields, array $actualIndexes, Connection $connection): void
     {
         foreach ($externalReferenceFields as $fieldName) {
             $indexName = 'IDX_EXT_' . $fieldName;
@@ -988,15 +957,15 @@ class OrmDataManager extends DataManager
             
             // Verify all columns exist before creating index
             $allColumnsExist = true;
-            foreach ( $columns as $column ) {
-                if ( !self::columnExists($connection, $column) ) {
+            foreach ($columns as $column) {
+                if (!self::columnExists($connection, $column)) {
                     $allColumnsExist = false;
                     break;
                 }
             }
             
             // Create index if it doesn't exist and all columns exist
-            if ( !$indexExists && $allColumnsExist ) {
+            if (!$indexExists && $allColumnsExist) {
                 self::addCompositeIndex($indexName, $columns, $connection);
             }
         }
