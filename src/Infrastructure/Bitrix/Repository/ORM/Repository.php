@@ -188,6 +188,11 @@ abstract class Repository
             
             if ( '*' === $fieldName ) {
                 $preparedFields[] = '*';
+                $refFields = !empty(static::getReferenceFields()) ? array_map(
+                    fn($refField) => $refField . '_ref',
+                    static::getReferenceFields()
+                ) : [];
+                $preparedFields = array_merge($preparedFields, $refFields);
                 continue;
             }
             
