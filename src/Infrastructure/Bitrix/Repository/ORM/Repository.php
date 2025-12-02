@@ -188,12 +188,13 @@ abstract class Repository
             
             if ( '*' === $fieldName ) {
                 $preparedFields[] = '*';
-                $refFields = !empty(static::getReferenceFields()) ? array_map(
+                // @fixme this approach does not allow to fetch Collections (OneToMany and ManyToMany references)
+                /*$refFields = !empty(static::getReferenceFields()) ? array_map(
                     fn($refField) => $refField . '_ref',
                     static::getReferenceFields()
                 ) : [];
                 $preparedFields = array_merge($preparedFields, $refFields);
-                continue;
+                continue;*/
             }
             
             if (
