@@ -21,7 +21,7 @@ class FileProxy
         
         $file
             ->setId((int)$obj->get(FileRepositoryInterface::ID))
-            ->setFileName((string)$obj->get(FileRepositoryInterface::NAME))
+            ->setFileName((string)$obj->get(FileRepositoryInterface::FILE_NAME))
             ->setOriginalName((string)$obj->get(FileRepositoryInterface::ORIGINAL_NAME))
         ;
         
