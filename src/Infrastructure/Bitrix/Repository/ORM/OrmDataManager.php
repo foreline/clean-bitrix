@@ -11,6 +11,7 @@ use Bitrix\Main\DB\Result;
 use Bitrix\Main\DB\SqlQueryException;
 use Bitrix\Main\Entity\Base;
 use Bitrix\Main\ORM\Data\DataManager;
+use Bitrix\Main\ORM\Fields\ScalarField;
 use Bitrix\Main\ORM\Fields\TextField;
 use Bitrix\Main\ORM\Fields\IntegerField;
 use Bitrix\Main\ORM\Fields\StringField;
@@ -124,7 +125,7 @@ class OrmDataManager extends DataManager
         $tableName = static::getTableName();
         
         // Skip if table doesn't exist yet (will be created by createTable())
-        if (!$connection->isTableExists($tableName)) {
+        if ( !$connection->isTableExists($tableName) ) {
             return;
         }
         
@@ -137,7 +138,7 @@ class OrmDataManager extends DataManager
             $actualFields[$tableField['Field']] = $tableField;
         }
         
-        /** @var string[] names of indexes */
+        /** @var string[] $actualConstraints names of indexes */
         $actualConstraints = [];
         
         $query = '
@@ -202,6 +203,12 @@ class OrmDataManager extends DataManager
         
         // Handle composite indexes for specific performance optimizations
         self::manageCompositeIndexes($actualConstraints, $connection);
+        
+        // Handle if field is nullable
+        self::manageNullable($scalarFields, $actualFields, $connection);
+        
+        // Handle default values
+        //self::manageDefault($scalarFields, $actualFields, $connection);
     }
     
     /**
@@ -213,7 +220,7 @@ class OrmDataManager extends DataManager
     {
         return $connection->getSqlHelper()->quote($field->getName())
             . ' ' . $connection->getSqlHelper()->getColumnTypeByField($field)
-            . ($field->isNullable() ? '' : ' NOT NULL')
+            . ( $field->isNullable() ? ' DEFAULT NULL' : ' NOT NULL' )
             ;
     }
     
@@ -234,7 +241,7 @@ class OrmDataManager extends DataManager
         
         self::$logger?->info($sqlField);
         
-        if (self::$dryRun) {
+        if ( self::$dryRun ) {
             self::$detectedChanges[] = [
                 'type' => 'add_field',
                 'table' => static::getTableName(),
@@ -267,7 +274,7 @@ class OrmDataManager extends DataManager
         
         self::$logger?->info($sqlField);
         
-        if (self::$dryRun) {
+        if ( self::$dryRun ) {
             self::$detectedChanges[] = [
                 'type' => 'add_constraint',
                 'table' => static::getTableName(),
@@ -334,7 +341,7 @@ class OrmDataManager extends DataManager
             
             self::$logger?->info($sqlField);
             
-            if (self::$dryRun) {
+            if ( self::$dryRun ) {
                 self::$detectedChanges[] = [
                     'type' => 'modify_field',
                     'table' => static::getTableName(),
@@ -368,7 +375,7 @@ class OrmDataManager extends DataManager
         
         self::$logger?->info($sqlField);
         
-        if (self::$dryRun) {
+        if ( self::$dryRun ) {
             self::$detectedChanges[] = [
                 'type' => 'drop_field',
                 'table' => static::getTableName(),
@@ -585,7 +592,6 @@ class OrmDataManager extends DataManager
      * @param array $actualFields
      * @param Connection $connection
      * @return void
-     * @throws SqlQueryException
      */
     public static function manageAutoIncrement(mixed $scalarFields, array $actualFields, Connection $connection): void
     {
@@ -602,7 +608,6 @@ class OrmDataManager extends DataManager
      * @param array $actualFields
      * @param Connection $connection
      * @return void
-     * @throws SqlQueryException
      */
     public static function setAutoIncrement(IntegerField $field, array $actualFields, Connection $connection): void
     {
@@ -668,17 +673,22 @@ class OrmDataManager extends DataManager
     {
         $foreignKeyFields = [];
         
-        foreach ($allFields as $field) {
+        foreach ( $allFields as $field ) {
             // Skip if not an IntegerField or StringField (foreign keys can be both)
-            if (!($field instanceof IntegerField) && !($field instanceof StringField)) {
+            if (
+                !($field instanceof IntegerField)
+                && !($field instanceof StringField)
+            ) {
                 continue;
             }
             
             // Check if there's a corresponding Reference field
             $referenceFieldName = $field->getName() . '_ref';
-            foreach ($allFields as $otherField) {
-                if ($otherField->getName() === $referenceFieldName &&
-                    $otherField instanceof Reference) {
+            foreach ( $allFields as $otherField ) {
+                if (
+                    $otherField->getName() === $referenceFieldName
+                    && $otherField instanceof Reference
+                ) {
                     $foreignKeyFields[] = $field->getName();
                     break;
                 }
@@ -697,8 +707,8 @@ class OrmDataManager extends DataManager
     {
         $booleanFields = [];
         
-        foreach ($allFields as $field) {
-            if ($field instanceof BooleanField) {
+        foreach ( $allFields as $field ) {
+            if ( $field instanceof BooleanField ) {
                 $booleanFields[] = $field->getName();
             }
         }
@@ -718,8 +728,8 @@ class OrmDataManager extends DataManager
         // Define patterns for external reference fields
         $externalReferencePatterns = ['source_id', 'ext_id'];
         
-        foreach ($allFields as $field) {
-            if ($field instanceof StringField) {
+        foreach ( $allFields as $field ) {
+            if ( $field instanceof StringField ) {
                 $fieldName = $field->getName();
                 if (in_array($fieldName, $externalReferencePatterns, true)) {
                     $externalReferenceFields[] = $fieldName;
@@ -735,7 +745,6 @@ class OrmDataManager extends DataManager
      * @param string $fieldName
      * @param Connection $connection
      * @return void
-     * @throws SqlQueryException
      */
     public static function addForeignKeyIndex(string $fieldName, Connection $connection): void
     {
@@ -760,7 +769,6 @@ class OrmDataManager extends DataManager
      * @param string $fieldName
      * @param Connection $connection
      * @return void
-     * @throws SqlQueryException
      */
     public static function addBooleanFieldIndex(string $fieldName, Connection $connection): void
     {
@@ -785,7 +793,6 @@ class OrmDataManager extends DataManager
      * @param string $fieldName
      * @param Connection $connection
      * @return void
-     * @throws SqlQueryException
      */
     public static function addExternalReferenceStringFieldIndex(string $fieldName, Connection $connection): void
     {
@@ -820,16 +827,21 @@ class OrmDataManager extends DataManager
             
             // Check if index already exists
             $indexExists = false;
-            foreach ($actualIndexes as $actualIndex) {
-                if ($actualIndex['INDEX_NAME'] === $indexName &&
-                    $actualIndex['COLUMN_NAME'] === $fieldName) {
+            foreach ( $actualIndexes as $actualIndex ) {
+                if (
+                    $actualIndex['INDEX_NAME'] === $indexName
+                    && $actualIndex['COLUMN_NAME'] === $fieldName
+                ) {
                     $indexExists = true;
                     break;
                 }
             }
             
             // Create index if it doesn't exist
-            if (!$indexExists && self::columnExists($connection, $fieldName)) {
+            if (
+                !$indexExists
+                && self::columnExists($connection, $fieldName)
+            ) {
                 self::addForeignKeyIndex($fieldName, $connection);
             }
         }
@@ -845,21 +857,26 @@ class OrmDataManager extends DataManager
      */
     public static function manageBooleanFieldIndexes(array $booleanFields, array $actualIndexes, Connection $connection): void
     {
-        foreach ($booleanFields as $fieldName) {
+        foreach ( $booleanFields as $fieldName ) {
             $indexName = 'IDX_BOOL_' . $fieldName;
             
             // Check if index already exists
             $indexExists = false;
-            foreach ($actualIndexes as $actualIndex) {
-                if ($actualIndex['INDEX_NAME'] === $indexName &&
-                    $actualIndex['COLUMN_NAME'] === $fieldName) {
+            foreach ( $actualIndexes as $actualIndex ) {
+                if (
+                    $actualIndex['INDEX_NAME'] === $indexName
+                    && $actualIndex['COLUMN_NAME'] === $fieldName
+                ) {
                     $indexExists = true;
                     break;
                 }
             }
             
             // Create index if it doesn't exist
-            if (!$indexExists && self::columnExists($connection, $fieldName)) {
+            if (
+                !$indexExists
+                && self::columnExists($connection, $fieldName)
+            ) {
                 self::addBooleanFieldIndex($fieldName, $connection);
             }
         }
@@ -875,21 +892,26 @@ class OrmDataManager extends DataManager
      */
     public static function manageExternalReferenceStringFieldIndexes(array $externalReferenceFields, array $actualIndexes, Connection $connection): void
     {
-        foreach ($externalReferenceFields as $fieldName) {
+        foreach ( $externalReferenceFields as $fieldName ) {
             $indexName = 'IDX_EXT_' . $fieldName;
             
             // Check if index already exists
             $indexExists = false;
-            foreach ($actualIndexes as $actualIndex) {
-                if ($actualIndex['INDEX_NAME'] === $indexName &&
-                    $actualIndex['COLUMN_NAME'] === $fieldName) {
+            foreach ( $actualIndexes as $actualIndex ) {
+                if (
+                    $actualIndex['INDEX_NAME'] === $indexName
+                    && $actualIndex['COLUMN_NAME'] === $fieldName
+                ) {
                     $indexExists = true;
                     break;
                 }
             }
             
             // Create index if it doesn't exist
-            if (!$indexExists && self::columnExists($connection, $fieldName)) {
+            if (
+                !$indexExists
+                && self::columnExists($connection, $fieldName)
+            ) {
                 self::addExternalReferenceStringFieldIndex($fieldName, $connection);
             }
         }
@@ -911,7 +933,6 @@ class OrmDataManager extends DataManager
      * @param array $columns
      * @param Connection $connection
      * @return void
-     * @throws SqlQueryException
      */
     public static function addCompositeIndex(string $indexName, array $columns, Connection $connection): void
     {
@@ -948,8 +969,8 @@ class OrmDataManager extends DataManager
             
             // Check if index already exists by name
             $indexExists = false;
-            foreach ($actualIndexes as $actualIndex) {
-                if ($actualIndex['INDEX_NAME'] === $indexName) {
+            foreach ( $actualIndexes as $actualIndex ) {
+                if ( $actualIndex['INDEX_NAME'] === $indexName ) {
                     $indexExists = true;
                     break;
                 }
@@ -957,16 +978,47 @@ class OrmDataManager extends DataManager
             
             // Verify all columns exist before creating index
             $allColumnsExist = true;
-            foreach ($columns as $column) {
-                if (!self::columnExists($connection, $column)) {
+            foreach ( $columns as $column ) {
+                if ( !self::columnExists($connection, $column) ) {
                     $allColumnsExist = false;
                     break;
                 }
             }
             
             // Create index if it doesn't exist and all columns exist
-            if (!$indexExists && $allColumnsExist) {
+            if ( !$indexExists && $allColumnsExist ) {
                 self::addCompositeIndex($indexName, $columns, $connection);
+            }
+        }
+    }
+    
+    /**
+     * Manages nullable property of fields
+     * @param ScalarField[] $scalarFields
+     * @param array $actualFields
+     * @param $connection
+     * @return void
+     */
+    public static function manageNullable(array $scalarFields, array $actualFields, $connection): void
+    {
+        foreach ( $scalarFields as $scalarField ) {
+            
+            if ( $scalarField->isNullable() !== ($actualFields[$scalarField->getName()]['Null'] === 'YES') ) {
+                
+                $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY ' . self::getSqlField($scalarField, $connection);
+                
+                self::$logger?->info($sqlField);
+                
+                if ( self::$dryRun ) {
+                    self::$detectedChanges[] = [
+                        'type' => 'modify_field_nullable',
+                        'table' => static::getTableName(),
+                        'field' => $scalarField->getName(),
+                        'sql' => $sqlField,
+                    ];
+                } else {
+                    $connection->query($sqlField);
+                }
             }
         }
     }
