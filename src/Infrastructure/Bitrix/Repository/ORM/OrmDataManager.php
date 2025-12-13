@@ -943,6 +943,19 @@ class OrmDataManager extends DataManager
         
         self::$logger?->info("Adding composite index: {$sql}");
         
+        // ADD DRY-RUN SUPPORT
+        if ( self::$dryRun ) {
+            self::$detectedChanges[] = [
+                'type' => 'add_composite_index',
+                'table' => $tableName,
+                'index_name' => $indexName,
+                'columns' => $columns,
+                'sql' => $sql,
+            ];
+            return;
+        }
+        
+        // Execute only when not in dry-run mode
         try {
             $connection->query($sql);
             self::$logger?->info("Successfully created composite index {$indexName} on {$tableName}");
@@ -963,7 +976,7 @@ class OrmDataManager extends DataManager
     {
         $compositeIndexes = static::getCompositeIndexes();
         
-        foreach ($compositeIndexes as $indexDefinition) {
+        foreach ( $compositeIndexes as $indexDefinition ) {
             $indexName = $indexDefinition['name'];
             $columns = $indexDefinition['columns'];
             
