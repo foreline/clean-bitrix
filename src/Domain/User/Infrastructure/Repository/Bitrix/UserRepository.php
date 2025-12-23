@@ -169,6 +169,9 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
         
         $params = $this->getParams($filter, $sort, $limit, $fields);
         
+        // Bitrix b_user table columns are uppercase
+        $params['order'] = array_change_key_case($params['order'], CASE_UPPER);
+        
         if ( !$this->result = UserTable::getList($params) ) {
             return null;
         }

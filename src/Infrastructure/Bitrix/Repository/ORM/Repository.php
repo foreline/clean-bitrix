@@ -142,8 +142,6 @@ abstract class Repository
         $params['filter'] = $this->getFilter($filter);
         
         if ( 0 < count($sort) ) {
-            //$sort = array_change_key_case($sort, CASE_LOWER);
-            //$sort = array_change_key_case($sort, CASE_UPPER);
             $params['order'] = $sort;
             
             if ( array_key_exists('rand', $sort) || array_key_exists('RAND', $sort) ) {
