@@ -181,7 +181,7 @@ class UserProxy extends Repository
             }
         }
         
-        $this->getUserFields($user, $obj);
+        //$this->getUserFields($user, $obj);
         
         return $user;
     }
