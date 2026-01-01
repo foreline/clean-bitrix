@@ -9,6 +9,7 @@ use Bitrix\Main\UI\Extension;
 use CJSCore;
 use Domain\Event\Publisher;
 use Domain\Events\ExceptionOccurredEvent;
+use Throwable;
 
 /**
  *
@@ -31,7 +32,7 @@ class PublicPageReport extends PublicPageController
             
             echo '<script src="' . self::$urlPrefix . '/js/script.js" type="module"></script>';
             Asset::getInstance()->addCss(self::$urlPrefix . '/css/style.css');
-    
+            
             foreach ( self::$filesToInclude as $file  ) {
                 if ( file_exists($file) ) {
                     require_once $file;
@@ -45,7 +46,15 @@ class PublicPageReport extends PublicPageController
             
             $APPLICATION->SetTitle('Отчет');
             
-            $componentName = self::$appName . ':' . $moduleName . '.' . $entityName . '.report';
+            $componentName = self::$appName . ':' .
+                $moduleName . '.' .
+                (
+                !empty($submoduleName)
+                    ? $submoduleName . '.'
+                    : ''
+                ) .
+                $entityName .
+                '.report';
             
             $APPLICATION->IncludeComponent(
                 'bitrix:ui.sidepanel.wrapper',
@@ -60,7 +69,7 @@ class PublicPageReport extends PublicPageController
                     'USE_UI_TOOLBAR' => 'Y',
                 ]
             );
-        } catch ( \Throwable $e ) {
+        } catch ( Throwable $e ) {
             Publisher::getInstance()->publish(new ExceptionOccurredEvent($e));
             echo '<div class="ui-alert ui-alert-icon-danger ui-alert-danger"><span class="ui-alert-message">';
             echo 'Error: ' . $e->getMessage();
