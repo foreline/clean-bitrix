@@ -311,15 +311,41 @@ class OrmDataManager extends DataManager
         $shouldModify = false;
         
         if ( $field instanceof TextField ) {
-            if ( 'text' !== $actualType && 'longtext' !== $actualType ) {
+            if (
+                'text' !== $actualType
+                && 'longtext' !== $actualType
+                && 'mediumtext' !== $actualType
+                && 'tinytext' !== $actualType
+            ) {
                 $shouldModify = true;
             }
+            
+            // Additional check for long text fields
+            if ( 'text' === $actualType && $field->isLong() ) {
+                $shouldModify = true;
+            }
+            
+            if (
+                !$field->isLong()
+                && (
+                    'mediumtext' === $actualType
+                    || 'longtext' === $actualType
+                )
+            ) {
+                $shouldModify = true;
+            }
+            
         } elseif ( $field instanceof StringField ) {
             if ( !str_starts_with($actualType, 'varchar') && !str_starts_with($actualType, 'char') ) {
                 $shouldModify = true;
             }
         } elseif ( $field instanceof IntegerField ) {
-            if ( !str_starts_with($actualType, 'int') && !str_starts_with($actualType, 'bigint') && !str_starts_with($actualType, 'smallint') && !str_starts_with($actualType, 'tinyint') ) {
+            if (
+                !str_starts_with($actualType, 'int')
+                && !str_starts_with($actualType, 'bigint')
+                && !str_starts_with($actualType, 'smallint')
+                && !str_starts_with($actualType, 'tinyint')
+            ) {
                 $shouldModify = true;
             }
         } elseif ( $field instanceof DateTimeField ) {
@@ -331,7 +357,11 @@ class OrmDataManager extends DataManager
                 $shouldModify = true;
             }
         } elseif ( $field instanceof FloatField ) {
-            if ( !str_starts_with($actualType, 'float') && !str_starts_with($actualType, 'double') && !str_starts_with($actualType, 'decimal') ) {
+            if (
+                !str_starts_with($actualType, 'float')
+                && !str_starts_with($actualType, 'double')
+                && !str_starts_with($actualType, 'decimal')
+            ) {
                 $shouldModify = true;
             }
         }
