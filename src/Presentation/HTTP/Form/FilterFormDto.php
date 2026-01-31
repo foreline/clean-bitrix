@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Presentation\HTTP\Form;
 
+use Domain\Repository\Enum\FilterOperator;
+use Domain\Repository\Enum\RangeFilterKey;
 use Domain\Repository\FilterInterface;
 use Infrastructure\Repository\Bitrix\FilterTransformer;
 
@@ -20,6 +22,16 @@ abstract class FilterFormDto
     public const BOOL_FIELDS = [];
     public const INT_FIELDS = [];
     public const STRING_FIELDS = [];
+    
+    /**
+     * Range filter field definitions
+     *
+     * Fields listed here will be processed as range filters.
+     * Format: ['field_name', 'nested.field_name']
+     */
+    public const RANGE_INT_FIELDS = [];
+    public const RANGE_FLOAT_FIELDS = [];
+    public const RANGE_DATE_FIELDS = [];
     
     /**
      * Converts HTML form data to FilterInterface domain object
@@ -75,6 +87,14 @@ abstract class FilterFormDto
         
         // Remove LIKE wildcards from string fields
         $data = self::processStringFields($data, static::STRING_FIELDS);
+        
+        // Process range filter fields for form display
+        $allRangeFields = array_merge(
+            static::RANGE_INT_FIELDS,
+            static::RANGE_FLOAT_FIELDS,
+            static::RANGE_DATE_FIELDS
+        );
+        $data = self::processRangeFilterFields($data, $allRangeFields);
         
         // Add filter prefixes
         return FilterTransformer::denormalizeToUi($data);
@@ -374,6 +394,259 @@ abstract class FilterFormDto
                 $data = self::addNestedStringWildcards($data, $field, $prefix . '.' . $key);
             }
         }
+        return $data;
+    }
+    
+    /**
+     * Converts range filter fields from HTML form values to RangeFilterValue storage format
+     *
+     * Input format (from HTML form):
+     * 'fieldName' => ['min' => '10', 'max' => '100']
+     * 'fieldName' => ['op' => 'gte', 'val' => '50']
+     *
+     * Output format (for Filter):
+     * 'fieldName' => ['op' => 'gte', 'val' => 50] (typed values)
+     * 'fieldName' => ['op' => 'between', 'min' => 10, 'max' => 100]
+     *
+     * @param array $data Data array to process
+     * @return array Processed data with range filters converted
+     */
+    protected static function convertRangeFilters(array $data): array
+    {
+        // Process integer range fields
+        foreach ( static::RANGE_INT_FIELDS as $field ) {
+            if ( isset($data[$field]) && is_array($data[$field]) ) {
+                $converted = self::convertIntRangeFilter($data[$field]);
+                if ( null !== $converted ) {
+                    $data[$field] = $converted;
+                } else {
+                    unset($data[$field]);
+                }
+            }
+        }
+        
+        // Process float range fields
+        foreach ( static::RANGE_FLOAT_FIELDS as $field ) {
+            if ( isset($data[$field]) && is_array($data[$field]) ) {
+                $converted = self::convertFloatRangeFilter($data[$field]);
+                if ( null !== $converted ) {
+                    $data[$field] = $converted;
+                } else {
+                    unset($data[$field]);
+                }
+            }
+        }
+        
+        // Process date range fields
+        foreach ( static::RANGE_DATE_FIELDS as $field ) {
+            if ( isset($data[$field]) && is_array($data[$field]) ) {
+                $converted = self::convertDateRangeFilter($data[$field]);
+                if ( null !== $converted ) {
+                    $data[$field] = $converted;
+                } else {
+                    unset($data[$field]);
+                }
+            }
+        }
+        
+        return $data;
+    }
+    
+    /**
+     * Converts integer range filter data from form values
+     *
+     * @param array $rangeData Raw range data from form
+     * @return array|null Converted range filter or null if empty
+     */
+    protected static function convertIntRangeFilter(array $rangeData): ?array
+    {
+        $opKey = RangeFilterKey::OPERATOR->value;
+        $valKey = RangeFilterKey::VALUE->value;
+        $minKey = RangeFilterKey::MIN->value;
+        $maxKey = RangeFilterKey::MAX->value;
+        
+        // Check for min/max format (between)
+        $hasMin = isset($rangeData[$minKey]) && '' !== $rangeData[$minKey] && is_numeric($rangeData[$minKey]);
+        $hasMax = isset($rangeData[$maxKey]) && '' !== $rangeData[$maxKey] && is_numeric($rangeData[$maxKey]);
+        
+        if ( $hasMin && $hasMax ) {
+            return [
+                $opKey => FilterOperator::BETWEEN->value,
+                $minKey => (int) $rangeData[$minKey],
+                $maxKey => (int) $rangeData[$maxKey],
+            ];
+        }
+        
+        if ( $hasMin ) {
+            return [
+                $opKey => FilterOperator::GREATER_OR_EQUAL->value,
+                $valKey => (int) $rangeData[$minKey],
+            ];
+        }
+        
+        if ( $hasMax ) {
+            return [
+                $opKey => FilterOperator::LESS_OR_EQUAL->value,
+                $valKey => (int) $rangeData[$maxKey],
+            ];
+        }
+        
+        // Check for operator/value format
+        if ( isset($rangeData[$opKey], $rangeData[$valKey]) && '' !== $rangeData[$valKey] && is_numeric($rangeData[$valKey]) ) {
+            return [
+                $opKey => $rangeData[$opKey],
+                $valKey => (int) $rangeData[$valKey],
+            ];
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Converts float range filter data from form values
+     *
+     * @param array $rangeData Raw range data from form
+     * @return array|null Converted range filter or null if empty
+     */
+    protected static function convertFloatRangeFilter(array $rangeData): ?array
+    {
+        $opKey = RangeFilterKey::OPERATOR->value;
+        $valKey = RangeFilterKey::VALUE->value;
+        $minKey = RangeFilterKey::MIN->value;
+        $maxKey = RangeFilterKey::MAX->value;
+        
+        // Check for min/max format (between)
+        $hasMin = isset($rangeData[$minKey]) && '' !== $rangeData[$minKey] && is_numeric($rangeData[$minKey]);
+        $hasMax = isset($rangeData[$maxKey]) && '' !== $rangeData[$maxKey] && is_numeric($rangeData[$maxKey]);
+        
+        if ( $hasMin && $hasMax ) {
+            return [
+                $opKey => FilterOperator::BETWEEN->value,
+                $minKey => (float) $rangeData[$minKey],
+                $maxKey => (float) $rangeData[$maxKey],
+            ];
+        }
+        
+        if ( $hasMin ) {
+            return [
+                $opKey => FilterOperator::GREATER_OR_EQUAL->value,
+                $valKey => (float) $rangeData[$minKey],
+            ];
+        }
+        
+        if ( $hasMax ) {
+            return [
+                $opKey => FilterOperator::LESS_OR_EQUAL->value,
+                $valKey => (float) $rangeData[$maxKey],
+            ];
+        }
+        
+        // Check for operator/value format
+        if ( isset($rangeData[$opKey], $rangeData[$valKey]) && '' !== $rangeData[$valKey] && is_numeric($rangeData[$valKey]) ) {
+            return [
+                $opKey => $rangeData[$opKey],
+                $valKey => (float) $rangeData[$valKey],
+            ];
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Converts date range filter data from form values
+     *
+     * @param array $rangeData Raw range data from form
+     * @return array|null Converted range filter or null if empty
+     */
+    protected static function convertDateRangeFilter(array $rangeData): ?array
+    {
+        $opKey = RangeFilterKey::OPERATOR->value;
+        $valKey = RangeFilterKey::VALUE->value;
+        $minKey = RangeFilterKey::MIN->value;
+        $maxKey = RangeFilterKey::MAX->value;
+        
+        // Check for min/max format (between)
+        $hasMin = isset($rangeData[$minKey]) && '' !== $rangeData[$minKey];
+        $hasMax = isset($rangeData[$maxKey]) && '' !== $rangeData[$maxKey];
+        
+        if ( $hasMin && $hasMax ) {
+            return [
+                $opKey => FilterOperator::BETWEEN->value,
+                $minKey => $rangeData[$minKey],
+                $maxKey => $rangeData[$maxKey],
+            ];
+        }
+        
+        if ( $hasMin ) {
+            return [
+                $opKey => FilterOperator::GREATER_OR_EQUAL->value,
+                $valKey => $rangeData[$minKey],
+            ];
+        }
+        
+        if ( $hasMax ) {
+            return [
+                $opKey => FilterOperator::LESS_OR_EQUAL->value,
+                $valKey => $rangeData[$maxKey],
+            ];
+        }
+        
+        // Check for operator/value format
+        if ( isset($rangeData[$opKey], $rangeData[$valKey]) && '' !== $rangeData[$valKey] ) {
+            return [
+                $opKey => $rangeData[$opKey],
+                $valKey => $rangeData[$valKey],
+            ];
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Processes range filter fields for form output (toFormData)
+     * Converts RangeFilterValue storage format back to form-friendly format
+     *
+     * @param array $data Data array to process
+     * @param array $fields Range field names
+     * @return array Processed data with range filters for form display
+     */
+    protected static function processRangeFilterFields(array $data, array $fields): array
+    {
+        $opKey = RangeFilterKey::OPERATOR->value;
+        $valKey = RangeFilterKey::VALUE->value;
+        $minKey = RangeFilterKey::MIN->value;
+        $maxKey = RangeFilterKey::MAX->value;
+        
+        foreach ( $fields as $field ) {
+            if ( !isset($data[$field]) || !is_array($data[$field]) ) {
+                continue;
+            }
+            
+            $rangeData = $data[$field];
+            
+            // If it's a between operation, keep min/max format
+            if ( isset($rangeData[$opKey]) && FilterOperator::BETWEEN->value === $rangeData[$opKey] ) {
+                $data[$field] = [
+                    $minKey => $rangeData[$minKey] ?? '',
+                    $maxKey => $rangeData[$maxKey] ?? '',
+                ];
+                continue;
+            }
+            
+            // For other operations, convert op/val to min/max for form display
+            if ( isset($rangeData[$opKey], $rangeData[$valKey]) ) {
+                $op = FilterOperator::tryFrom($rangeData[$opKey]);
+                $val = $rangeData[$valKey];
+                
+                $data[$field] = match ($op) {
+                    FilterOperator::GREATER_OR_EQUAL, FilterOperator::GREATER_THAN => [$minKey => $val, $maxKey => ''],
+                    FilterOperator::LESS_OR_EQUAL, FilterOperator::LESS_THAN => [$minKey => '', $maxKey => $val],
+                    FilterOperator::EQUALS => [$minKey => $val, $maxKey => $val],
+                    default => [$minKey => '', $maxKey => ''],
+                };
+            }
+        }
+        
         return $data;
     }
 }
