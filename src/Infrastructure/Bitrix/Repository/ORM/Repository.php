@@ -10,6 +10,7 @@ use Domain\Repository\FilterInterface;
 use Domain\Repository\GroupInterface;
 use Domain\Repository\LimitInterface;
 use Domain\Repository\SortInterface;
+use Infrastructure\Repository\Bitrix\RangeFilterTranslator;
 use JetBrains\PhpStorm\Deprecated;
 use ReflectionClass;
 
@@ -34,7 +35,7 @@ abstract class Repository
     protected static int $maxNestingDepth = 1;
     
     /**
-     * @var string
+     * @var string[]
      * Entities to exclude from nested fetching to prevent circular dependencies
      * Can be overridden in child repositories
      * @example ['User', 'Profile']
@@ -222,6 +223,13 @@ abstract class Repository
                 
                 continue;
                 
+            }
+    
+            // Handle range filters (e.g., {'op': 'gte', 'val': 5})
+            if ( RangeFilterTranslator::isRangeFilter($value) ) {
+                $translated = RangeFilterTranslator::translate($key, $value);
+                $preparedFilter = array_merge($preparedFilter, $translated);
+                continue;
             }
             
             $preparedFilter[$key] = $value;
