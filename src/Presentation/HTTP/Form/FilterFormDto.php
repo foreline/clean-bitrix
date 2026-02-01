@@ -400,9 +400,15 @@ abstract class FilterFormDto
     /**
      * Converts range filter fields from HTML form values to RangeFilterValue storage format
      *
-     * Input format (from HTML form):
+     * Handles both nested array format and dot notation format:
+     *
+     * Input format (nested array from form):
      * 'fieldName' => ['min' => '10', 'max' => '100']
      * 'fieldName' => ['op' => 'gte', 'val' => '50']
+     *
+     * Input format (dot notation after FilterTransformer):
+     * 'fieldName.op' => 'gte', 'fieldName.val' => '50'
+     * 'fieldName.min' => '10', 'fieldName.max' => '100'
      *
      * Output format (for Filter):
      * 'fieldName' => ['op' => 'gte', 'val' => 50] (typed values)
@@ -413,6 +419,11 @@ abstract class FilterFormDto
      */
     protected static function convertRangeFilters(array $data): array
     {
+        // First, collect range filter data from dot notation and convert to nested arrays
+        $data = self::collectRangeFilterDataFromDotNotation($data, static::RANGE_INT_FIELDS);
+        $data = self::collectRangeFilterDataFromDotNotation($data, static::RANGE_FLOAT_FIELDS);
+        $data = self::collectRangeFilterDataFromDotNotation($data, static::RANGE_DATE_FIELDS);
+        
         // Process integer range fields
         foreach ( static::RANGE_INT_FIELDS as $field ) {
             if ( isset($data[$field]) && is_array($data[$field]) ) {
@@ -446,6 +457,53 @@ abstract class FilterFormDto
                 } else {
                     unset($data[$field]);
                 }
+            }
+        }
+        
+        return $data;
+    }
+    
+    /**
+     * Collects range filter data from dot notation keys into nested arrays
+     *
+     * Converts:
+     * ['actions_count.op' => 'eq', 'actions_count.val' => '5']
+     * To:
+     * ['actions_count' => ['op' => 'eq', 'val' => '5']]
+     *
+     * @param array $data Data array with potential dot notation keys
+     * @param array $rangeFields List of range field names to process
+     * @return array Data array with range filter data collected into nested arrays
+     */
+    protected static function collectRangeFilterDataFromDotNotation(array $data, array $rangeFields): array
+    {
+        $rangeKeys = [
+            RangeFilterKey::OPERATOR->value,
+            RangeFilterKey::VALUE->value,
+            RangeFilterKey::MIN->value,
+            RangeFilterKey::MAX->value,
+        ];
+        
+        foreach ( $rangeFields as $field ) {
+            // Skip if already exists as nested array
+            if ( isset($data[$field]) && is_array($data[$field]) ) {
+                continue;
+            }
+            
+            $rangeData = [];
+            
+            // Collect data from dot notation keys
+            foreach ( $rangeKeys as $rangeKey ) {
+                $dotKey = $field . '.' . $rangeKey;
+                if ( isset($data[$dotKey]) ) {
+                    $rangeData[$rangeKey] = $data[$dotKey];
+                    unset($data[$dotKey]);
+                }
+            }
+            
+            // If we collected any range data, store it as nested array
+            if ( [] !== $rangeData ) {
+                $data[$field] = $rangeData;
             }
         }
         
@@ -605,6 +663,7 @@ abstract class FilterFormDto
     /**
      * Processes range filter fields for form output (toFormData)
      * Converts RangeFilterValue storage format back to form-friendly format
+     * Preserves operator and value for proper UI restoration
      *
      * @param array $data Data array to process
      * @param array $fields Range field names
@@ -624,26 +683,32 @@ abstract class FilterFormDto
             
             $rangeData = $data[$field];
             
-            // If it's a between operation, keep min/max format
-            if ( isset($rangeData[$opKey]) && FilterOperator::BETWEEN->value === $rangeData[$opKey] ) {
+            // Skip if no operator defined
+            if ( !isset($rangeData[$opKey]) ) {
+                continue;
+            }
+            
+            $op = FilterOperator::tryFrom($rangeData[$opKey]);
+            if ( null === $op ) {
+                continue;
+            }
+            
+            // If it's a between operation, preserve min/max with operator
+            if ( FilterOperator::BETWEEN === $op ) {
                 $data[$field] = [
+                    $opKey => $op->value,
                     $minKey => $rangeData[$minKey] ?? '',
                     $maxKey => $rangeData[$maxKey] ?? '',
                 ];
                 continue;
             }
             
-            // For other operations, convert op/val to min/max for form display
-            if ( isset($rangeData[$opKey], $rangeData[$valKey]) ) {
-                $op = FilterOperator::tryFrom($rangeData[$opKey]);
-                $val = $rangeData[$valKey];
-                
-                $data[$field] = match ($op) {
-                    FilterOperator::GREATER_OR_EQUAL, FilterOperator::GREATER_THAN => [$minKey => $val, $maxKey => ''],
-                    FilterOperator::LESS_OR_EQUAL, FilterOperator::LESS_THAN => [$minKey => '', $maxKey => $val],
-                    FilterOperator::EQUALS => [$minKey => $val, $maxKey => $val],
-                    default => [$minKey => '', $maxKey => ''],
-                };
+            // For other operations, preserve op/val for UI restoration
+            if ( isset($rangeData[$valKey]) ) {
+                $data[$field] = [
+                    $opKey => $op->value,
+                    $valKey => $rangeData[$valKey],
+                ];
             }
         }
         
