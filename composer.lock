@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9d0300a3dc5e84a52aa0712acdfe2c85",
+    "content-hash": "e24309714b6a21aa020a8d520465985f",
     "packages": [
         {
             "name": "brick/math",
-            "version": "0.14.3",
+            "version": "0.14.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/brick/math.git",
-                "reference": "6af96b11de3f7d99730c118c200418c48274edb4"
+                "reference": "a8b53e6cc4d3a336543f042a4dfa0e3f2f2356a4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/brick/math/zipball/6af96b11de3f7d99730c118c200418c48274edb4",
-                "reference": "6af96b11de3f7d99730c118c200418c48274edb4",
+                "url": "https://api.github.com/repos/brick/math/zipball/a8b53e6cc4d3a336543f042a4dfa0e3f2f2356a4",
+                "reference": "a8b53e6cc4d3a336543f042a4dfa0e3f2f2356a4",
                 "shasum": ""
             },
             "require": {
@@ -56,7 +56,7 @@
             ],
             "support": {
                 "issues": "https://github.com/brick/math/issues",
-                "source": "https://github.com/brick/math/tree/0.14.3"
+                "source": "https://github.com/brick/math/tree/0.14.4"
             },
             "funding": [
                 {
@@ -64,7 +64,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-02-01T15:18:05+00:00"
+            "time": "2026-02-02T16:57:31+00:00"
         },
         {
             "name": "dragonmantank/cron-expression",
@@ -132,11 +132,11 @@
         },
         {
             "name": "foreline/clean",
-            "version": "v0.6.32",
+            "version": "v0.6.33",
             "source": {
                 "type": "git",
                 "url": "ssh://git@gitlab.foreline.ru:2222/foreline/clean.git",
-                "reference": "6c20c12013ac755c3a841ad81a1e094e79f66181"
+                "reference": "52c24c0539d78e2a0612523c180d40ea1763134f"
             },
             "require": {
                 "dragonmantank/cron-expression": "^3.4",
@@ -181,7 +181,7 @@
                 }
             ],
             "description": "PHP clean architecture framework",
-            "time": "2026-02-02T11:27:01+00:00"
+            "time": "2026-02-03T12:29:15+00:00"
         },
         {
             "name": "foreline/clean-ui",
