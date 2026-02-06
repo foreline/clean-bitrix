@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Infrastructure\Redis;
 
 use Exception;
+use JsonException;
 use Predis\Client as PredisClient;
 use Predis\Response\Status;
 
@@ -12,16 +13,16 @@ use Predis\Response\Status;
  */
 class RedisClient
 {
-    private ?PredisClient $client = null;
+    private ?PredisClient $client;
     
     /**
      *
      */
     public function __construct(?PredisClient $client = null)
     {
-        if ( empty($_ENV['REDIS_HOST']) ) {
+        /*if ( empty($_ENV['REDIS_HOST']) ) {
             return;
-        }
+        }*/
         
         $this->client = $client ?? new PredisClient([
             'scheme'   => $_ENV['REDIS_SCHEME'] ?: 'tcp',
@@ -78,14 +79,24 @@ class RedisClient
     }
     
     /**
-     * @param int $userId
-     * @param string $message
-     * @return ?int[]
+     * Публикует сообщение для конкретного пользователя через канал user_notifications.
+     * Node.js Socket.IO сервер получает сообщение и доставляет его во все активные сокеты пользователя.
+     *
+     * @param int $userId ID пользователя-получателя
+     * @param array $notification Данные уведомления (будут переданы клиенту как есть)
+     * @return ?int Количество подписчиков, получивших сообщение
+     * @throws JsonException
      */
-    public function publishForUser(int $userId, string $message): ?array
+    public function publishForUser(int $userId, array $notification): ?int
     {
-        // Получить все сессии пользователя
-        // @fixme @todo реализовать получение сессий пользователя из Redis
+        $payload = json_encode([
+            'type'           => 'user_notification',
+            'target_user_id' => $userId,
+            'timestamp'      => time(),
+            'notification'   => $notification,
+        ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+        
+        return $this->publish('user_notifications', $payload);
     }
     
 }
