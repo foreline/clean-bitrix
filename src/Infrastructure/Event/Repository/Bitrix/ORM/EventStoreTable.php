@@ -52,7 +52,8 @@ class EventStoreTable extends OrmDataManager
                 'size' => 500,
             ]))->configureRequired(true),
             (new TextField(self::EVENT_BODY))
-                ->configureRequired(true),
+                ->configureRequired(true)
+                ->configureLong(true),
             (new DatetimeField(self::OCCURRED_ON))
                 ->configureRequired(true),
             (new StringField(self::STATUS, [
