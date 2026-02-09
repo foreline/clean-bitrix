@@ -32,6 +32,7 @@ class EventDispatchTable extends OrmDataManager
     public const PROCESSING_STARTED_AT = 'processing_started_at';
     public const PROCESSED_AT = 'processed_at';
     public const ERROR = 'error';
+    public const NEXT_RETRY_AT = 'next_retry_at';
     public const DATE_CREATED = 'date_created';
     
     // Relation alias for JOINs
@@ -71,6 +72,8 @@ class EventDispatchTable extends OrmDataManager
             (new DatetimeField(self::PROCESSED_AT))
                 ->configureNullable(true),
             (new TextField(self::ERROR))
+                ->configureNullable(true),
+            (new DatetimeField(self::NEXT_RETRY_AT))
                 ->configureNullable(true),
             (new DatetimeField(self::DATE_CREATED))
                 ->configureNullable(true),

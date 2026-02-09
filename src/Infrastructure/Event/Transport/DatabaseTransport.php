@@ -12,7 +12,6 @@ use Exception;
 use Infrastructure\Event\Message\AsyncEventMessage;
 use Infrastructure\Event\Repository\Bitrix\ORM\EventDispatchTable;
 use Infrastructure\Event\Repository\Bitrix\ORM\EventStoreTable;
-use RuntimeException;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Stamp\TransportMessageIdStamp;
 use Symfony\Component\Messenger\Transport\TransportInterface;
@@ -53,10 +52,15 @@ final class DatabaseTransport implements TransportInterface
      */
     public function get(): iterable
     {
-        // 1. Find the next pending dispatch row
+        // 1. Find the next pending dispatch row (fresh or retry-ready)
         $dispatchRow = EventDispatchTable::getList([
             'filter' => [
                 '=' . EventDispatchTable::STATUS => EventStoreStatusEnum::PENDING->value,
+                [
+                    'LOGIC' => 'OR',
+                    '=' . EventDispatchTable::NEXT_RETRY_AT => null,
+                    '<=' . EventDispatchTable::NEXT_RETRY_AT => new DateTime(),
+                ],
             ],
             'order' => [
                 EventDispatchTable::ID => 'ASC',
