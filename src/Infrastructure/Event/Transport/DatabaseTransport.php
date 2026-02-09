@@ -10,19 +10,18 @@ use Bitrix\Main\Type\DateTime;
 use Domain\Event\Enum\EventStoreStatusEnum;
 use Exception;
 use Infrastructure\Event\Message\AsyncEventMessage;
+use Infrastructure\Event\Repository\Bitrix\ORM\EventDispatchTable;
 use Infrastructure\Event\Repository\Bitrix\ORM\EventStoreTable;
-use InvalidArgumentException;
 use RuntimeException;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Stamp\TransportMessageIdStamp;
 use Symfony\Component\Messenger\Transport\TransportInterface;
 
 /**
- * Symfony Messenger transport backed by the EventStoreTable (Bitrix ORM).
+ * Symfony Messenger transport backed by the normalized two-table EventStore.
  *
- * Uses the `servicedesk_event_store` database table as both persistence
- * layer and message queue. Pending messages are polled by the worker,
- * locked via status transition, and acknowledged/rejected after processing.
+ * Polls `servicedesk_event_dispatch` for PENDING dispatch rows, then fetches
+ * the serialized event body from `servicedesk_event_store` via the foreign key.
  *
  * This eliminates the need for ext-redis or symfony/doctrine-messenger
  * while maintaining full Symfony Messenger Worker compatibility.
@@ -40,10 +39,11 @@ final class DatabaseTransport implements TransportInterface
     }
     
     /**
-     * Fetches pending messages from the event store.
+     * Fetches pending dispatch rows from the event dispatch table.
      *
      * Atomically transitions status from 'pending' to 'processing'
-     * to prevent concurrent workers from picking the same message.
+     * to prevent concurrent workers from picking the same dispatch.
+     * Then fetches the serialized event body from the event store.
      *
      * @return iterable<Envelope>
      * @throws ArgumentException
@@ -53,28 +53,31 @@ final class DatabaseTransport implements TransportInterface
      */
     public function get(): iterable
     {
-        $row = EventStoreTable::getList([
+        // 1. Find the next pending dispatch row
+        $dispatchRow = EventDispatchTable::getList([
             'filter' => [
-                '=' . EventStoreTable::STATUS => EventStoreStatusEnum::PENDING->value,
+                '=' . EventDispatchTable::STATUS => EventStoreStatusEnum::PENDING->value,
             ],
             'order' => [
-                EventStoreTable::ID => 'ASC',
+                EventDispatchTable::ID => 'ASC',
             ],
             'limit' => 1,
         ])->fetch();
         
-        if ( false === $row || null === $row ) {
+        if ( false === $dispatchRow || null === $dispatchRow ) {
             // No pending messages — sleep to avoid busy-waiting
             usleep($this->pollingIntervalMs * 1000);
             return [];
         }
         
-        $id = (int)$row[EventStoreTable::ID];
+        $dispatchId = (int)$dispatchRow[EventDispatchTable::ID];
+        $eventStoreId = (int)$dispatchRow[EventDispatchTable::EVENT_STORE_ID];
         
-        // Atomically claim the message by updating status
-        $updateResult = EventStoreTable::update($id, [
-            EventStoreTable::STATUS => EventStoreStatusEnum::PROCESSING->value,
-            EventStoreTable::ATTEMPTS => (int)$row[EventStoreTable::ATTEMPTS] + 1,
+        // 2. Atomically claim the dispatch by updating status
+        $updateResult = EventDispatchTable::update($dispatchId, [
+            EventDispatchTable::STATUS => EventStoreStatusEnum::PROCESSING->value,
+            EventDispatchTable::ATTEMPTS => (int)$dispatchRow[EventDispatchTable::ATTEMPTS] + 1,
+            EventDispatchTable::PROCESSING_STARTED_AT => new DateTime(),
         ]);
         
         if ( !$updateResult->isSuccess() ) {
@@ -82,15 +85,38 @@ final class DatabaseTransport implements TransportInterface
             return [];
         }
         
+        // 3. Fetch the serialized event body from event store
+        $eventRow = EventStoreTable::getList([
+            'filter' => [
+                '=' . EventStoreTable::ID => $eventStoreId,
+            ],
+            'select' => [
+                EventStoreTable::TYPE_NAME,
+                EventStoreTable::EVENT_BODY,
+            ],
+            'limit' => 1,
+        ])->fetch();
+        
+        if ( false === $eventRow || null === $eventRow ) {
+            // Orphaned dispatch row — mark as failed
+            EventDispatchTable::update($dispatchId, [
+                EventDispatchTable::STATUS => EventStoreStatusEnum::FAILED->value,
+                EventDispatchTable::ERROR => 'Event store row not found (event_store_id=' . $eventStoreId . ')',
+                EventDispatchTable::PROCESSED_AT => new DateTime(),
+            ]);
+            return [];
+        }
+        
         $message = new AsyncEventMessage(
-            eventClass: $row[EventStoreTable::TYPE_NAME],
-            serializedEvent: $row[EventStoreTable::EVENT_BODY],
-            subscriberClass: $row[EventStoreTable::SUBSCRIBER_CLASS],
-            eventStoreId: $id,
+            eventClass: $eventRow[EventStoreTable::TYPE_NAME],
+            serializedEvent: $eventRow[EventStoreTable::EVENT_BODY],
+            subscriberClass: $dispatchRow[EventDispatchTable::SUBSCRIBER_CLASS],
+            eventDispatchId: $dispatchId,
+            eventStoreId: $eventStoreId,
         );
         
         $envelope = new Envelope($message, [
-            new TransportMessageIdStamp((string)$id),
+            new TransportMessageIdStamp((string)$dispatchId),
         ]);
         
         return [$envelope];
@@ -99,9 +125,8 @@ final class DatabaseTransport implements TransportInterface
     /**
      * Acknowledges successful message processing.
      *
-     * No-op: The AsyncEventMessageHandler already updates EventStore
-     * status to 'completed' with processed_at timestamp, which has
-     * full context (subscriber info, event details). Avoids duplicate DB writes.
+     * No-op: The AsyncEventMessageHandler already updates EventDispatch
+     * status to 'completed' with processed_at timestamp.
      *
      * @param Envelope $envelope
      * @return void
@@ -114,9 +139,8 @@ final class DatabaseTransport implements TransportInterface
     /**
      * Rejects a message after processing failure.
      *
-     * No-op: The AsyncEventMessageHandler already updates EventStore
+     * No-op: The AsyncEventMessageHandler already updates EventDispatch
      * status to 'failed' with error details before re-throwing.
-     * Avoids duplicate DB writes.
      *
      * @param Envelope $envelope
      * @return void
@@ -127,72 +151,18 @@ final class DatabaseTransport implements TransportInterface
     }
     
     /**
-     * Sends a message to the transport (persists to Event Store).
+     * Sends a message to the transport.
      *
-     * Note: In normal flow, SymfonyMessengerAsyncDispatcher already persists
-     * to EventStoreTable before dispatching. This method serves as the
-     * Messenger-compatible send entry point when used via the bus.
+     * No-op in the normalized architecture: SymfonyMessengerAsyncDispatcher
+     * handles persistence directly to EventStoreTable + EventDispatchTable.
+     * This method exists only for Symfony Messenger TransportInterface compliance.
      *
      * @param Envelope $envelope
      * @return Envelope
-     * @throws Exception
      */
     public function send(Envelope $envelope): Envelope
     {
-        /** @var AsyncEventMessage $message */
-        $message = $envelope->getMessage();
-        
-        if ( !$message instanceof AsyncEventMessage ) {
-            throw new InvalidArgumentException(
-                'DatabaseTransport only supports AsyncEventMessage, got: ' . get_class($envelope->getMessage())
-            );
-        }
-        
-        // The message should already be persisted by SymfonyMessengerAsyncDispatcher.
-        // If it has an eventStoreId > 0, it's already in the DB — just return.
-        if ( 0 < $message->getEventStoreId() ) {
-            return $envelope->with(
-                new TransportMessageIdStamp((string)$message->getEventStoreId())
-            );
-        }
-        
-        // Fallback: persist now if not yet stored
-        $result = EventStoreTable::add([
-            EventStoreTable::TYPE_NAME => $message->getEventClass(),
-            EventStoreTable::EVENT_BODY => $message->getSerializedEvent(),
-            EventStoreTable::OCCURRED_ON => new DateTime(),
-            EventStoreTable::STATUS => EventStoreStatusEnum::PENDING->value,
-            EventStoreTable::SUBSCRIBER_CLASS => $message->getSubscriberClass(),
-            EventStoreTable::ATTEMPTS => 0,
-            EventStoreTable::DATE_CREATED => new DateTime(),
-        ]);
-        
-        if ( !$result->isSuccess() ) {
-            throw new RuntimeException(
-                'Failed to persist message: ' . implode(', ', $result->getErrorMessages())
-            );
-        }
-        
-        return $envelope->with(
-            new TransportMessageIdStamp((string)$result->getId())
-        );
-    }
-    
-    /**
-     * Extracts the event store ID from an envelope's TransportMessageIdStamp.
-     *
-     * @param Envelope $envelope
-     * @return int|null
-     */
-    private function extractId(Envelope $envelope): ?int
-    {
-        /** @var TransportMessageIdStamp|null $stamp */
-        $stamp = $envelope->last(TransportMessageIdStamp::class);
-        
-        if ( null === $stamp ) {
-            return null;
-        }
-        
-        return (int)$stamp->getId();
+        // Persistence is handled by SymfonyMessengerAsyncDispatcher
+        return $envelope;
     }
 }

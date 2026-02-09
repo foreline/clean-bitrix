@@ -9,7 +9,7 @@ use Domain\Event\EventInterface;
 use Domain\Event\Publisher;
 use Domain\Events\ExceptionOccurredEvent;
 use Infrastructure\Event\Message\AsyncEventMessage;
-use Infrastructure\Event\Repository\Bitrix\ORM\EventStoreTable;
+use Infrastructure\Event\Repository\Bitrix\ORM\EventDispatchTable;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
@@ -19,7 +19,7 @@ use Throwable;
  * Symfony Messenger handler that processes async events.
  *
  * Deserializes the event, instantiates the target subscriber,
- * and calls handle(). Updates EventStore status accordingly.
+ * and calls handle(). Updates EventDispatchTable status accordingly.
  */
 final class AsyncEventMessageHandler
 {
@@ -41,7 +41,7 @@ final class AsyncEventMessageHandler
     public function __invoke(AsyncEventMessage $message): void
     {
         $subscriberClass = $message->getSubscriberClass();
-        $eventStoreId = $message->getEventStoreId();
+        $eventDispatchId = $message->getEventDispatchId();
         
         try {
             // Deserialize the event
@@ -67,28 +67,30 @@ final class AsyncEventMessageHandler
             $subscriber = new $subscriberClass();
             $subscriber->handle($event);
             
-            // Mark as completed with timestamp
-            EventStoreTable::update($eventStoreId, [
-                EventStoreTable::STATUS       => EventStoreStatusEnum::COMPLETED->value,
-                EventStoreTable::PROCESSED_AT => new DateTime(),
+            // Mark dispatch as completed
+            EventDispatchTable::update($eventDispatchId, [
+                EventDispatchTable::STATUS       => EventStoreStatusEnum::COMPLETED->value,
+                EventDispatchTable::PROCESSED_AT => new DateTime(),
             ]);
             
             $this->logger->info('Async event processed', [
                 'event' => $message->getEventClass(),
                 'subscriber' => $subscriberClass,
-                'event_store_id' => $eventStoreId,
+                'dispatch_id' => $eventDispatchId,
+                'event_store_id' => $message->getEventStoreId(),
             ]);
             
         } catch (Throwable $e) {
-            // Mark as failed with error details
+            // Mark dispatch as failed with error details
             try {
-                EventStoreTable::update($eventStoreId, [
-                    EventStoreTable::STATUS => EventStoreStatusEnum::FAILED->value,
-                    EventStoreTable::ERROR  => mb_substr($e->getMessage(), 0, 5000),
+                EventDispatchTable::update($eventDispatchId, [
+                    EventDispatchTable::STATUS => EventStoreStatusEnum::FAILED->value,
+                    EventDispatchTable::ERROR  => mb_substr($e->getMessage(), 0, 5000),
+                    EventDispatchTable::PROCESSED_AT => new DateTime(),
                 ]);
             } catch (Throwable $updateError) {
-                $this->logger->error('Failed to update event store on error', [
-                    'event_store_id' => $eventStoreId,
+                $this->logger->error('Failed to update dispatch on error', [
+                    'dispatch_id' => $eventDispatchId,
                     'update_error' => $updateError->getMessage(),
                 ]);
             }
@@ -96,7 +98,8 @@ final class AsyncEventMessageHandler
             $this->logger->error('Async event processing failed', [
                 'event' => $message->getEventClass(),
                 'subscriber' => $subscriberClass,
-                'event_store_id' => $eventStoreId,
+                'dispatch_id' => $eventDispatchId,
+                'event_store_id' => $message->getEventStoreId(),
                 'error' => $e->getMessage(),
             ]);
             

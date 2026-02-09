@@ -8,14 +8,14 @@ use Bitrix\Main\ORM\Fields\IntegerField;
 use Bitrix\Main\ORM\Fields\StringField;
 use Bitrix\Main\ORM\Fields\TextField;
 use Bitrix\Main\SystemException;
-use Domain\Event\Enum\EventStoreStatusEnum;
 use Exception;
 use Infrastructure\Bitrix\Repository\ORM\OrmDataManager;
 use Psr\Log\LoggerInterface;
 
 /**
  * Bitrix ORM entity for async event store.
- * Stores serialized domain events for async processing.
+ * Stores serialized domain events as immutable log entries.
+ * Subscriber dispatch tracking is handled by EventDispatchTable.
  */
 class EventStoreTable extends OrmDataManager
 {
@@ -23,11 +23,6 @@ class EventStoreTable extends OrmDataManager
     public const TYPE_NAME = 'type_name';
     public const EVENT_BODY = 'event_body';
     public const OCCURRED_ON = 'occurred_on';
-    public const STATUS = 'status';
-    public const SUBSCRIBER_CLASS = 'subscriber_class';
-    public const ATTEMPTS = 'attempts';
-    public const PROCESSED_AT = 'processed_at';
-    public const ERROR = 'error';
     public const DATE_CREATED = 'date_created';
     
     /**
@@ -56,19 +51,6 @@ class EventStoreTable extends OrmDataManager
                 ->configureLong(true),
             (new DatetimeField(self::OCCURRED_ON))
                 ->configureRequired(true),
-            (new StringField(self::STATUS, [
-                'size' => 20,
-            ]))->configureRequired(true)
-                ->configureDefaultValue(EventStoreStatusEnum::PENDING->value),
-            (new StringField(self::SUBSCRIBER_CLASS, [
-                'size' => 500,
-            ]))->configureNullable(true),
-            (new IntegerField(self::ATTEMPTS))
-                ->configureDefaultValue(0),
-            (new DatetimeField(self::PROCESSED_AT))
-                ->configureNullable(true),
-            (new TextField(self::ERROR))
-                ->configureNullable(true),
             (new DatetimeField(self::DATE_CREATED))
                 ->configureNullable(true),
         ];

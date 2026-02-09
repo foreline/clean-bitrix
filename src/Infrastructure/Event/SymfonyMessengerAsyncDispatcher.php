@@ -8,52 +8,108 @@ use Domain\Event\AsyncDispatcherInterface;
 use Domain\Event\AsyncSubscriberInterface;
 use Domain\Event\Enum\EventStoreStatusEnum;
 use Domain\Event\EventInterface;
-use Infrastructure\Event\Message\AsyncEventMessage;
+use Infrastructure\Event\Repository\Bitrix\ORM\EventDispatchTable;
 use Infrastructure\Event\Repository\Bitrix\ORM\EventStoreTable;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
-use Symfony\Component\Messenger\MessageBusInterface;
 use Throwable;
 
 /**
- * Concrete AsyncDispatcherInterface implementation using Symfony Messenger.
+ * Concrete AsyncDispatcherInterface implementation backed by normalized EventStore.
  *
- * Persists the event to EventStore, then dispatches an AsyncEventMessage
- * through the Symfony Messenger bus for deferred processing by the worker.
+ * Architecture (two-table):
+ *   EventStoreTable  – immutable event log (one row per event, stores serialized body)
+ *   EventDispatchTable – dispatch queue (one row per subscriber, references event body)
  *
- * If async dispatch fails (transport error, serialization error, etc.),
+ * The event body is written to EventStoreTable ONCE per event object instance
+ * (cached by spl_object_id). Each subscriber gets a lightweight dispatch row
+ * in EventDispatchTable with a foreign key to the event body.
+ *
+ * If async dispatch fails (DB write, serialization error, etc.),
  * falls back to synchronous execution to prevent event loss.
  */
 final class SymfonyMessengerAsyncDispatcher implements AsyncDispatcherInterface
 {
-    private MessageBusInterface $messageBus;
     private LoggerInterface $logger;
     
+    /**
+     * Cache of event store data keyed by spl_object_id.
+     * Stores both serialization data AND the persisted eventStoreId,
+     * so the event body is written to DB exactly once per event object.
+     *
+     * @var array<int, array{eventStoreId: int, class: string}>
+     */
+    private array $eventCache = [];
+    
     public function __construct(
-        MessageBusInterface $messageBus,
         ?LoggerInterface $logger = null,
     ) {
-        $this->messageBus = $messageBus;
         $this->logger = $logger ?? new NullLogger();
     }
     
     public function dispatch(EventInterface $event, AsyncSubscriberInterface $subscriber): void
     {
-        $eventClass = get_class($event);
         $subscriberClass = get_class($subscriber);
         
         try {
-            $serializedEvent = serialize($event);
+            // Persist event body once, cache the eventStoreId for subsequent subscribers
+            $cached = $this->getOrPersistEvent($event);
             
-            // Persist to Event Store for audit trail and retry capability
+            // Create dispatch row for this subscriber
+            $dispatchResult = EventDispatchTable::add([
+                EventDispatchTable::EVENT_STORE_ID => $cached['eventStoreId'],
+                EventDispatchTable::SUBSCRIBER_CLASS => $subscriberClass,
+                EventDispatchTable::STATUS => EventStoreStatusEnum::PENDING->value,
+                EventDispatchTable::ATTEMPTS => 0,
+                EventDispatchTable::DATE_CREATED => new DateTime(),
+            ]);
+            
+            if ( !$dispatchResult->isSuccess() ) {
+                throw new RuntimeException(
+                    'Failed to create dispatch row: ' . implode(', ', $dispatchResult->getErrorMessages())
+                );
+            }
+            
+            $this->logger->debug('Event dispatched async', [
+                'event' => $cached['class'],
+                'subscriber' => $subscriberClass,
+                'event_store_id' => $cached['eventStoreId'],
+                'dispatch_id' => (int)$dispatchResult->getId(),
+            ]);
+            
+        } catch (Throwable $e) {
+            $this->logger->error('Async dispatch failed, falling back to sync execution', [
+                'event' => get_class($event),
+                'subscriber' => $subscriberClass,
+                'error' => $e->getMessage(),
+            ]);
+            
+            // Fallback: execute synchronously to prevent event loss
+            $subscriber->handle($event);
+        }
+    }
+    
+    /**
+     * Persists the event body to EventStoreTable (once per event object),
+     * and returns the cached eventStoreId and class name.
+     *
+     * @param EventInterface $event
+     * @return array{eventStoreId: int, class: string}
+     */
+    private function getOrPersistEvent(EventInterface $event): array
+    {
+        $objectId = spl_object_id($event);
+        
+        if ( !isset($this->eventCache[$objectId]) ) {
+            $eventClass = get_class($event);
+            $serialized = serialize($event);
+            $occurredOn = DateTime::createFromTimestamp($event->occurredOn()->getTimestamp());
+            
             $result = EventStoreTable::add([
                 EventStoreTable::TYPE_NAME => $eventClass,
-                EventStoreTable::EVENT_BODY => $serializedEvent,
-                EventStoreTable::OCCURRED_ON => DateTime::createFromTimestamp($event->occurredOn()->getTimestamp()),
-                EventStoreTable::STATUS => EventStoreStatusEnum::PENDING->value,
-                EventStoreTable::SUBSCRIBER_CLASS => $subscriberClass,
-                EventStoreTable::ATTEMPTS => 0,
+                EventStoreTable::EVENT_BODY => $serialized,
+                EventStoreTable::OCCURRED_ON => $occurredOn,
                 EventStoreTable::DATE_CREATED => new DateTime(),
             ]);
             
@@ -63,33 +119,21 @@ final class SymfonyMessengerAsyncDispatcher implements AsyncDispatcherInterface
                 );
             }
             
-            $eventStoreId = (int)$result->getId();
-            
-            // Dispatch via Symfony Messenger
-            $message = new AsyncEventMessage(
-                eventClass: $eventClass,
-                serializedEvent: $serializedEvent,
-                subscriberClass: $subscriberClass,
-                eventStoreId: $eventStoreId,
-            );
-            
-            $this->messageBus->dispatch($message);
-            
-            $this->logger->debug('Event dispatched async', [
-                'event' => $eventClass,
-                'subscriber' => $subscriberClass,
-                'event_store_id' => $eventStoreId,
-            ]);
-            
-        } catch (Throwable $e) {
-            $this->logger->error('Async dispatch failed, falling back to sync execution', [
-                'event' => $eventClass,
-                'subscriber' => $subscriberClass,
-                'error' => $e->getMessage(),
-            ]);
-            
-            // Fallback: execute synchronously to prevent event loss
-            $subscriber->handle($event);
+            $this->eventCache[$objectId] = [
+                'eventStoreId' => (int)$result->getId(),
+                'class'        => $eventClass,
+            ];
         }
+        
+        return $this->eventCache[$objectId];
+    }
+    
+    /**
+     * Clears the event cache.
+     * Called automatically if needed, or can be invoked manually between publish cycles.
+     */
+    public function clearCache(): void
+    {
+        $this->eventCache = [];
     }
 }
