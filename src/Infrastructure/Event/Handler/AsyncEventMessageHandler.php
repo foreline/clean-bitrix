@@ -4,10 +4,12 @@ declare(strict_types=1);
 namespace Infrastructure\Event\Handler;
 
 use Bitrix\Main\Type\DateTime;
+use Domain\Event\Event;
 use Domain\Event\Enum\EventStoreStatusEnum;
 use Domain\Event\EventInterface;
 use Domain\Event\Publisher;
 use Domain\Events\ExceptionOccurredEvent;
+use Domain\User\Service\GetCurrentUser;
 use Infrastructure\Event\Message\AsyncEventMessage;
 use Infrastructure\Event\Repository\Bitrix\ORM\EventDispatchTable;
 use Psr\Log\LoggerInterface;
@@ -62,6 +64,19 @@ final class AsyncEventMessageHandler
                 throw new RuntimeException(
                     'Subscriber class not found: ' . $subscriberClass
                 );
+            }
+            
+            // Restore the original user context from the serialized event.
+            // Events capture the authenticated user at publish time (Event::__construct).
+            // Without this, permission checks in subscribers fail with NotAuthorizedException
+            // because the worker runs as CLI with no web session.
+            if ( $event instanceof Event && null !== $event->getUser() ) {
+                ( new GetCurrentUser() )->set($event->getUser());
+                
+                $this->logger->debug('Restored user context for async processing', [
+                    'user_id' => $event->getUser()->getId(),
+                    'subscriber' => $subscriberClass,
+                ]);
             }
             
             $subscriber = new $subscriberClass();
