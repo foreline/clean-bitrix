@@ -7,11 +7,13 @@ use Bitrix\Main\Type\DateTime;
 use Domain\Event\Event;
 use Domain\Event\Enum\EventStoreStatusEnum;
 use Domain\Event\EventInterface;
+use Domain\Event\Monitoring\EventPurgeStrategyInterface;
 use Domain\Event\RetryableSubscriberInterface;
 use Domain\Event\RetryPolicy;
 use Domain\User\Service\GetCurrentUser;
 use Exception;
 use Infrastructure\Event\Message\AsyncEventMessage;
+use Infrastructure\Event\Monitoring\NullPurgeStrategy;
 use Infrastructure\Event\Repository\Bitrix\ORM\EventDispatchTable;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -34,17 +36,21 @@ final class AsyncEventMessageHandler
 {
     private LoggerInterface $logger;
     private RetryPolicy $defaultRetryPolicy;
+    private EventPurgeStrategyInterface $purgeStrategy;
     
     /**
      * @param RetryPolicy|null $defaultRetryPolicy Default retry policy for subscribers without RetryableSubscriberInterface
      * @param LoggerInterface|null $logger
+     * @param EventPurgeStrategyInterface|null $purgeStrategy Strategy for auto-purging completed events (default: NullPurgeStrategy)
      */
     public function __construct(
         ?RetryPolicy $defaultRetryPolicy = null,
         ?LoggerInterface $logger = null,
+        ?EventPurgeStrategyInterface $purgeStrategy = null,
     ) {
         $this->defaultRetryPolicy = $defaultRetryPolicy ?? new RetryPolicy();
         $this->logger = $logger ?? new NullLogger();
+        $this->purgeStrategy = $purgeStrategy ?? new NullPurgeStrategy();
     }
     
     /**
@@ -106,6 +112,12 @@ final class AsyncEventMessageHandler
                 'dispatch_id' => $eventDispatchId,
                 'event_store_id' => $message->getEventStoreId(),
             ]);
+            
+            // Auto-purge check: if all dispatches for this event are done, clean up
+            $this->purgeStrategy->onDispatchCompleted(
+                $message->getEventStoreId(),
+                $eventDispatchId
+            );
             
         } catch (Throwable $e) {
             $this->handleFailure($message, $e);
@@ -215,7 +227,7 @@ final class AsyncEventMessageHandler
     ): void {
         $delayMs = $retryPolicy->calculateDelayMs($attempts);
         $delaySeconds = (int)ceil($delayMs / 1000);
-    
+        
         $nextRetryAt = (new DateTime())->add('+' . $delaySeconds . ' seconds');
         
         try {

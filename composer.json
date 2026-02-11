@@ -11,8 +11,8 @@
   ],
   "require": {
     "php": ">=8.1",
-    "foreline/clean": "0.6.46",
-    "foreline/clean-ui": "^0.6.05",
+    "foreline/clean": "^1.0.01",
+    "foreline/clean-ui": "^1.0.01",
     "foreline/io-response": "*",
     "webmozart/assert": "^1.11",
     "symfony/http-foundation": ">6.3",

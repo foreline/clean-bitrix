@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "fc2797c1e96788d6a0b5f9ea7ff94c7e",
+    "content-hash": "21ebad6219a044e44032b0f5f7b83742",
     "packages": [
         {
             "name": "brick/math",
-            "version": "0.14.7",
+            "version": "0.14.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/brick/math.git",
-                "reference": "07ff363b16ef8aca9692bba3be9e73fe63f34e50"
+                "reference": "63422359a44b7f06cae63c3b429b59e8efcc0629"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/brick/math/zipball/07ff363b16ef8aca9692bba3be9e73fe63f34e50",
-                "reference": "07ff363b16ef8aca9692bba3be9e73fe63f34e50",
+                "url": "https://api.github.com/repos/brick/math/zipball/63422359a44b7f06cae63c3b429b59e8efcc0629",
+                "reference": "63422359a44b7f06cae63c3b429b59e8efcc0629",
                 "shasum": ""
             },
             "require": {
@@ -56,7 +56,7 @@
             ],
             "support": {
                 "issues": "https://github.com/brick/math/issues",
-                "source": "https://github.com/brick/math/tree/0.14.7"
+                "source": "https://github.com/brick/math/tree/0.14.8"
             },
             "funding": [
                 {
@@ -64,7 +64,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-02-07T10:57:35+00:00"
+            "time": "2026-02-10T14:33:43+00:00"
         },
         {
             "name": "dragonmantank/cron-expression",
@@ -132,11 +132,11 @@
         },
         {
             "name": "foreline/clean",
-            "version": "v0.6.46",
+            "version": "v1.0.02",
             "source": {
                 "type": "git",
                 "url": "ssh://git@gitlab.foreline.ru:2222/foreline/clean.git",
-                "reference": "19e16100e641110a81e5d0643a8f3da5bdfdd3f1"
+                "reference": "783bca0cc80c739c1b92c1f230c7bb363632c2eb"
             },
             "require": {
                 "dragonmantank/cron-expression": "^3.4",
@@ -186,18 +186,18 @@
                 }
             ],
             "description": "PHP clean architecture framework",
-            "time": "2026-02-10T09:32:55+00:00"
+            "time": "2026-02-11T09:12:13+00:00"
         },
         {
             "name": "foreline/clean-ui",
-            "version": "v0.6.05",
+            "version": "v1.0.1",
             "source": {
                 "type": "git",
                 "url": "ssh://git@gitlab.foreline.ru:2222/foreline/clean-ui.git",
-                "reference": "adc32f07635bc96216d054cb0a7804c064148b79"
+                "reference": "98f906a6c0b19aa53aa3811f3a9627daf8578e4e"
             },
             "require": {
-                "foreline/clean": "^0.6.44",
+                "foreline/clean": "^1.0.01",
                 "php": ">=8.0",
                 "symfony/http-foundation": ">6.3"
             },
@@ -225,7 +225,7 @@
                 }
             ],
             "description": "UI library for clean framework",
-            "time": "2026-02-10T09:09:08+00:00"
+            "time": "2026-02-11T09:14:40+00:00"
         },
         {
             "name": "foreline/io-response",
