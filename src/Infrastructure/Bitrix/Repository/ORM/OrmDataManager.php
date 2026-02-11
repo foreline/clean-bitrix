@@ -138,7 +138,7 @@ class OrmDataManager extends DataManager
             $actualFields[$tableField['Field']] = $tableField;
         }
         
-        /** @var string[] $actualConstraints names of indexes */
+        /** @var array<string, array<string, mixed>> $actualConstraints indexes keyed by INDEX_NAME */
         $actualConstraints = [];
         
         $query = '
@@ -434,11 +434,20 @@ class OrmDataManager extends DataManager
             return;
         }
         
+        // Check if index actually exists before attempting to drop (MySQL 8.0 does not support IF EXISTS syntax)
+        if ( !self::indexExists($connection, $actualConstraint['INDEX_NAME']) ) {
+            self::$logger?->debug(
+                'Index `' . $actualConstraint['INDEX_NAME'] . '` does not exist on `'
+                . static::getTableName() . '`, skipping drop'
+            );
+            return;
+        }
+        
         $sqlField = 'ALTER TABLE `' . static::getTableName() . '` DROP KEY `' . $actualConstraint['INDEX_NAME'] . '`';
         
         self::$logger?->info($sqlField);
         
-        if (self::$dryRun) {
+        if ( self::$dryRun ) {
             self::$detectedChanges[] = [
                 'type' => 'drop_constraint',
                 'table' => static::getTableName(),
@@ -446,7 +455,19 @@ class OrmDataManager extends DataManager
                 'sql' => $sqlField,
             ];
         } else {
-            $connection->query($sqlField);
+            try {
+                $connection->query($sqlField);
+            } catch ( SqlQueryException $e ) {
+                // Error 1091: Can't DROP; check that key/column exists (race condition)
+                if ( str_contains($e->getMessage(), '1091') ) {
+                    self::$logger?->debug(
+                        'Index `' . $actualConstraint['INDEX_NAME']
+                        . '` was already dropped (race condition): ' . $e->getMessage()
+                    );
+                } else {
+                    throw $e;
+                }
+            }
         }
     }
     
@@ -683,6 +704,38 @@ class OrmDataManager extends DataManager
             WHERE
                 TABLE_NAME = \'' . addslashes($tableName) . '\'
                 AND COLUMN_NAME = \'' . addslashes($columnName) . '\';
+        ';
+        
+        $result = $connection->query($sql);
+        
+        if ( !$fetch = $result->fetch() ) {
+            return false;
+        }
+        
+        return (bool) $fetch;
+    }
+    
+    /**
+     * Checks if an index exists on a table.
+     *
+     * @param Connection $connection
+     * @param string $indexName
+     * @param string $tableName
+     * @return bool
+     * @throws SqlQueryException
+     */
+    public static function indexExists(Connection $connection, string $indexName, string $tableName = ''): bool
+    {
+        $tableName = $tableName ?: static::getTableName();
+        
+        $sql = '
+        SELECT INDEX_NAME
+            FROM INFORMATION_SCHEMA.STATISTICS
+            WHERE
+                TABLE_SCHEMA = \'' . addslashes($connection->getDatabase()) . '\'
+                AND TABLE_NAME = \'' . addslashes($tableName) . '\'
+                AND INDEX_NAME = \'' . addslashes($indexName) . '\'
+            LIMIT 1;
         ';
         
         $result = $connection->query($sql);
