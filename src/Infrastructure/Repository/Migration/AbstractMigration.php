@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Infrastructure\Repository\Migration;
 
+use Bitrix\Main\Application;
 use Bitrix\Main\DB\Connection;
 use Bitrix\Main\DB\SqlQueryException;
 use Exception;
@@ -44,6 +45,9 @@ abstract class AbstractMigration implements MigrationInterface
     {
         $this->logger = $logger;
         
+        // Pre-migration actions (table renames, data prep, etc.)
+        $this->beforeUp($connection);
+        
         // Step 1: Apply entity table migrations
         foreach ($this->entityTables as $entityTableClass) {
             $this->logger?->info("Checking table for: {$entityTableClass}");
@@ -75,10 +79,18 @@ abstract class AbstractMigration implements MigrationInterface
     
     /**
      * Rollback migration
+     *
+     * @param Connection $connection
+     * @param LoggerInterface|null $logger
+     * @return void
+     * @throws SqlQueryException
      */
     public function down(Connection $connection, ?LoggerInterface $logger = null): void
     {
         $this->logger = $logger;
+        
+        // Pre-rollback actions
+        $this->beforeDown($connection);
         
         // Execute rollback SQL in reverse order
         $downSql = array_reverse($this->customDownSql);
@@ -102,6 +114,10 @@ abstract class AbstractMigration implements MigrationInterface
     
     /**
      * Default validation - override for specific checks
+     *
+     * @param Connection $connection
+     * @return void
+     * @throws Exception
      */
     public function validate(Connection $connection): void
     {
@@ -114,6 +130,92 @@ abstract class AbstractMigration implements MigrationInterface
     }
     
     /**
+     * Hook: actions to perform BEFORE entity table checks in up().
+     *
+     * Override in concrete migrations to rename tables, transform data,
+     * or perform any preparatory work before EntityTable::checkTable() runs.
+     *
+     * This method runs inside the MigrationManager transaction.
+     *
+     * @param ?Connection $connection
+     * @return void
+     */
+    protected function beforeUp(?Connection $connection = null): void
+    {
+        // No-op by default. Override in subclasses.
+    }
+    
+    /**
+     * Hook: actions to perform BEFORE rollback SQL in down().
+     *
+     * Override in concrete migrations to reverse any preparatory work
+     * done in beforeUp().
+     *
+     * This method runs inside the MigrationManager transaction.
+     *
+     * @param ?Connection $connection
+     * @return void
+     */
+    protected function beforeDown(?Connection $connection = null): void
+    {
+        // No-op by default. Override in subclasses.
+    }
+    
+    /**
+     * Helper: Rename a database table safely.
+     *
+     * Handles four scenarios:
+     *   1. Old table exists, new doesn't   → RENAME TABLE (normal case)
+     *   2. Old doesn't exist, new exists   → skip (already renamed)
+     *   3. Both exist                      → throw exception (conflict)
+     *   4. Neither exists                  → skip (nothing to do)
+     *
+     * @param string $oldTableName
+     * @param string $newTableName
+     * @param Connection|null $connection
+     * @return void
+     *
+     * @throws Exception When both old and new tables exist (conflict)
+     * @throws SqlQueryException On SQL execution failure
+     */
+    protected function renameTable(
+        string $oldTableName,
+        string $newTableName,
+        ?Connection $connection = null
+    ): void {
+        $connection = $connection ?? Application::getConnection();
+        
+        $oldExists = $connection->isTableExists($oldTableName);
+        $newExists = $connection->isTableExists($newTableName);
+        
+        if ($oldExists && $newExists) {
+            throw new Exception(
+                "Cannot rename table `{$oldTableName}` to `{$newTableName}`: " .
+                "both tables already exist. Manual resolution required."
+            );
+        }
+        
+        if (!$oldExists && $newExists) {
+            $this->logger?->info(
+                "Table `{$newTableName}` already exists, skipping rename from `{$oldTableName}`"
+            );
+            return;
+        }
+        
+        if (!$oldExists && !$newExists) {
+            $this->logger?->info(
+                "Neither `{$oldTableName}` nor `{$newTableName}` exist, skipping rename"
+            );
+            return;
+        }
+        
+        // oldExists && !newExists → perform rename
+        $sql = "RENAME TABLE `{$oldTableName}` TO `{$newTableName}`";
+        $this->logger?->info($sql);
+        $connection->query($sql);
+    }
+    
+    /**
      * Helper: Check if table exists
      */
     protected function tableExists(Connection $connection, string $tableName): bool
@@ -123,6 +225,12 @@ abstract class AbstractMigration implements MigrationInterface
     
     /**
      * Helper: Check if column exists
+     *
+     * @param Connection $connection
+     * @param string $tableName
+     * @param string $columnName
+     * @return bool
+     * @throws SqlQueryException
      */
     protected function columnExists(Connection $connection, string $tableName, string $columnName): bool
     {
@@ -140,6 +248,12 @@ abstract class AbstractMigration implements MigrationInterface
     
     /**
      * Helper: Check if index exists
+     *
+     * @param Connection $connection
+     * @param string $tableName
+     * @param string $indexName
+     * @return bool
+     * @throws SqlQueryException
      */
     protected function indexExists(Connection $connection, string $tableName, string $indexName): bool
     {
