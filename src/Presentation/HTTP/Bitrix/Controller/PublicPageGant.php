@@ -52,8 +52,6 @@ class PublicPageGant extends PublicPageController
                 echo '</div>';
             }
             
-            $APPLICATION->AddChainItem($APPLICATION->GetTitle());
-            
             $componentName = self::$appName . ':' .
                 $moduleName . '.' .
                 (
