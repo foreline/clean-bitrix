@@ -1099,6 +1099,12 @@ class OrmDataManager extends DataManager
     {
         foreach ( $scalarFields as $scalarField ) {
             
+            // Skip fields that were just added in this updateTable() call
+            // (they have the correct nullable definition from addField())
+            if ( !array_key_exists($scalarField->getName(), $actualFields) ) {
+                continue;
+            }
+            
             if ( $scalarField->isNullable() !== ($actualFields[$scalarField->getName()]['Null'] === 'YES') ) {
                 
                 $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY ' . self::getSqlField($scalarField, $connection);
