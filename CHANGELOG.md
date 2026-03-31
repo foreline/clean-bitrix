@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.7] - 2026-03-31
+
 ### Fixed
 - ORM: Skip newly-added fields in updateTable() nullable check to prevent errors when modifying fields added in the same call.
 
-## [1.1.6] - 2026-03-31
+## [1.1.6]
 
 [Previous versions documented in git history]
