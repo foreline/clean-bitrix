@@ -5,6 +5,7 @@ namespace Infrastructure\Bitrix\Repository\Iblock;
 
 use Bitrix\Iblock\IblockTable;
 use Bitrix\Iblock\PropertyTable;
+use Bitrix\Main\SiteTable;
 use CIBlock;
 use CIBlockProperty;
 use Domain\Exception\NotFoundException;
@@ -35,7 +36,7 @@ class Iblock
         
         unset($iblockData['ID']);
     
-        $siteId = \Bitrix\Main\SiteTable::getList()
+        $siteId = SiteTable::getList()
             ->fetchObject()
             ?->get('LID')
         ;

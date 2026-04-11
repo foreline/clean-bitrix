@@ -8,6 +8,7 @@ use Bitrix\Main\ObjectPropertyException;
 use Bitrix\Main\SystemException;
 use Bitrix\Main\UserFieldTable;
 use Bitrix\Main\UserTable;
+use CFile;
 use Domain\File\UseCase\GetFile;
 use Domain\User\Aggregate\User;
 use Domain\User\Aggregate\UserInterface;
@@ -91,7 +92,7 @@ class UserProxy extends Repository
         }
     
         if ( $user->getAvatar() ) {
-            $data[UserRepositoryInterface::AVATAR] = \CFile::MakeFileArray($user->getAvatar()->getSource());
+            $data[UserRepositoryInterface::AVATAR] = CFile::MakeFileArray($user->getAvatar()->getSource());
         }
         
         return $data;
