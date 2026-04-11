@@ -1,5 +1,5 @@
 ﻿---
-description: "Commit changes using Conventional Commits (clean-bitrix)"
+description: "clean-bitrix: Commit changes using Conventional Commits"
 model: Claude Haiku 4.5 (copilot)
 tools: ['read', 'search', 'execute/runInTerminal']
 ---
@@ -35,13 +35,25 @@ This project critically depends on `foreline/clean` (and `foreline/clean-ui`, `f
 3. Commit `composer.lock` (and `composer.json` if changed) separately from other changes using `chore(deps): ...` type.
 4. In the commit body, explicitly list the package name and version transition (e.g., `foreline/clean v1.1.3 → v1.1.4`).
 
+### Core Dependency Version Tracking
+
+**clean-bitrix MAJOR version MUST always match `foreline/clean` MAJOR version.** These two libraries are tightly coupled — clean-bitrix implements the abstractions defined in foreline/clean, so their major versions must stay aligned.
+
+> **Tracked foreline/clean major version: 1**
+
+**Rules:**
+- If `foreline/clean` changes its **major version** (e.g., v1.x.y → v2.0.0), clean-bitrix MUST be tagged with the **same major version** (e.g., v2.0.0), not just incremented. Commit with `chore(deps)!: ...` (note the `!`) and **update the tracked version above** in this prompt file as part of the same commit.
+- If a major version jump skips numbers (e.g., v1 → v3), clean-bitrix follows to v3.0.0 — always match, never just increment.
+- If the major version stays the same, no prompt update is needed.
+- The tracked version is the single source of truth for detecting major version crossings. Always check the diff against it, not against the previous `composer.lock` alone.
+
 ### Tagging After Core Dependency Updates
 
 **A version bump in any `foreline/*` package MUST trigger a new tagged release of clean-bitrix**, even if no source code changed. Rationale: downstream consumers of clean-bitrix need to know that the underlying abstractions have been updated.
 
+- `foreline/clean` MAJOR bump → set clean-bitrix to the **same MAJOR version** as `foreline/clean` (e.g., foreline/clean v2.0.0 → clean-bitrix v2.0.0).
 - `foreline/clean` MINOR bump (new features) → bump clean-bitrix **MINOR**.
 - `foreline/clean` PATCH bump (bug fixes) → bump clean-bitrix **PATCH**.
-- `foreline/clean` MAJOR bump (breaking changes) → bump clean-bitrix **MAJOR**.
 - For `foreline/clean-ui` and `foreline/io-response`, use the same logic but these are less likely to require MAJOR bumps.
 
 ### Scope Detection
