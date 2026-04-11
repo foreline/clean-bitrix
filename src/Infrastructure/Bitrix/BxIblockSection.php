@@ -19,7 +19,7 @@ use RuntimeException;
 
 abstract class BxIblockSection extends Bxd7
 {
-    private ?Result $result = null;
+    protected ?Result $result = null;
     
     /**
      * @param array $filter
@@ -144,9 +144,7 @@ abstract class BxIblockSection extends Bxd7
         }
         
         return $this;
-        
-        
-        
+        /*
         $this->result = SectionTable::getList(
             [
                 'filter' => $arFilter,
@@ -171,15 +169,15 @@ abstract class BxIblockSection extends Bxd7
                         ],
                         'join_type' => 'left'
                     ],
-                    /*'ELEMENT' => [
-                        'data_type' => '\Bitrix\Iblock\SectionElementTable',
-                        'reference' => [
-                            //'=this.IBLOCK_SECTION_ID' => 'ref.ID'
-                            '=this.ID' => 'ref.IBLOCK_SECTION_ID',
-                        ],
-                        //'filter'    => ['ACTIVE' => 'Y'],
-                        'join_type' => 'left'
-                    ],*/
+                    //'ELEMENT' => [
+                    //    'data_type' => '\Bitrix\Iblock\SectionElementTable',
+                    //    'reference' => [
+                    //        //'=this.IBLOCK_SECTION_ID' => 'ref.ID'
+                    //        '=this.ID' => 'ref.IBLOCK_SECTION_ID',
+                    //    ],
+                    //    //'filter'    => ['ACTIVE' => 'Y'],
+                    //    'join_type' => 'left'
+                    //],
                 ],
             ]
         );
@@ -189,6 +187,7 @@ abstract class BxIblockSection extends Bxd7
         }
         
         return $this;
+        */
     }
     
     /**

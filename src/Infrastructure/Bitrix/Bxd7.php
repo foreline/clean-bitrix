@@ -21,6 +21,7 @@ use Bitrix\Main\Loader;
 use Bitrix\Main\LoaderException;
 use Bitrix\Main\ObjectPropertyException;
 use Bitrix\Main\ORM\Objectify\EntityObject;
+use Bitrix\Main\SiteTable;
 use Bitrix\Main\SystemException;
 use Bitrix\Main\Type\DateTime;
 use CIBlock;
@@ -318,7 +319,7 @@ abstract class Bxd7
             ?->get('site_id')
         ;*/
         
-        $siteId = \Bitrix\Main\SiteTable::getList()
+        $siteId = SiteTable::getList()
             ->fetchObject()
             ?->get('LID')
         ;
@@ -754,6 +755,8 @@ abstract class Bxd7
             
             $isField = $this->isField($field);
             $isProperty = $this->isProperty($field);
+    
+            $preparedField = $field;
             
             switch ( $fieldType ) {
                 case self::FIELD_TYPE_ELEMENT:
