@@ -37,23 +37,22 @@ This project critically depends on `foreline/clean` (and `foreline/clean-ui`, `f
 
 ### Core Dependency Version Tracking
 
-**clean-bitrix MAJOR version MUST always match `foreline/clean` MAJOR version.** These two libraries are tightly coupled — clean-bitrix implements the abstractions defined in foreline/clean, so their major versions must stay aligned.
+**clean-bitrix version MUST track `foreline/clean` versions at both MAJOR and MINOR levels.** These two libraries are tightly coupled — clean-bitrix implements the abstractions defined in foreline/clean, so their version branches must align to signal feature parity and API stability to consumers.
 
-> **Tracked foreline/clean major version: 1**
+> **Tracked foreline/clean version: 2.0**
 
 **Rules:**
-- If `foreline/clean` changes its **major version** (e.g., v1.x.y → v2.0.0), clean-bitrix MUST be tagged with the **same major version** (e.g., v2.0.0), not just incremented. Commit with `chore(deps)!: ...` (note the `!`) and **update the tracked version above** in this prompt file as part of the same commit.
-- If a major version jump skips numbers (e.g., v1 → v3), clean-bitrix follows to v3.0.0 — always match, never just increment.
-- If the major version stays the same, no prompt update is needed.
-- The tracked version is the single source of truth for detecting major version crossings. Always check the diff against it, not against the previous `composer.lock` alone.
+- If `foreline/clean` changes its **MAJOR or MINOR version** (e.g., v2.0.0 → v2.1.0 or v2.0.0 → v3.0.0), clean-bitrix MUST be bumped to match that **MAJOR.MINOR** version (e.g., v2.1.0 or v3.0.0). Commit with `chore(deps)!: ...` (note the `!` for MAJOR bumps) and **update the tracked version above** in this prompt file.
+- If `foreline/clean` changes its **PATCH version only** (e.g., v2.0.0 → v2.0.1), clean-bitrix can optionally bump its **PATCH** independently if there are no code changes — it's not required to match PATCH.
+- The tracked version is the single source of truth for detecting MAJOR/MINOR version crossings. Always check the diff against it, not against the previous `composer.lock` alone.
+- This ensures clean-bitrix version numbers transparently communicate which version branch of the core library it supports.
 
 ### Tagging After Core Dependency Updates
 
-**A version bump in any `foreline/*` package MUST trigger a new tagged release of clean-bitrix**, even if no source code changed. Rationale: downstream consumers of clean-bitrix need to know that the underlying abstractions have been updated.
+**A MAJOR or MINOR version bump in any `foreline/*` package MUST trigger a new tagged release of clean-bitrix**, even if no source code changed. Rationale: downstream consumers of clean-bitrix need to know that the underlying abstractions have been updated and which version branch they're aligned with.
 
-- `foreline/clean` MAJOR bump → set clean-bitrix to the **same MAJOR version** as `foreline/clean` (e.g., foreline/clean v2.0.0 → clean-bitrix v2.0.0).
-- `foreline/clean` MINOR bump (new features) → bump clean-bitrix **MINOR**.
-- `foreline/clean` PATCH bump (bug fixes) → bump clean-bitrix **PATCH**.
+- `foreline/clean` MAJOR or MINOR bump → set clean-bitrix to the **same MAJOR.MINOR version** as `foreline/clean` (e.g., foreline/clean v2.0.0 → clean-bitrix v2.0.0; foreline/clean v2.1.0 → clean-bitrix v2.1.0).
+- `foreline/clean` PATCH bump (bug fixes only) → bump clean-bitrix **PATCH** if no code changes, or continue with next commit's natural bump.
 - For `foreline/clean-ui` and `foreline/io-response`, use the same logic but these are less likely to require MAJOR bumps.
 
 ### Scope Detection
@@ -93,9 +92,9 @@ This project critically depends on `foreline/clean` (and `foreline/clean-ui`, `f
 ### Good Examples
 
 ```
-chore(deps): update foreline/clean to v1.1.4
+chore(deps): update foreline/clean to v2.0.0
 
-foreline/clean v1.1.3 → v1.1.4.
+foreline/clean v1.1.3 → v2.0.0 (major version bump).
 ```
 
 ```
@@ -162,7 +161,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `fix` → **Fixed**
   - `refactor`, `perf` → **Changed**
   - `docs` → **Changed** (only if user-facing; skip internal docs)
-  - `chore(deps)` with core dependency update → **Changed** (e.g., "Updated foreline/clean to v1.1.4")
+  - `chore(deps)` with core dependency update → **Changed** (e.g., "Updated foreline/clean to v2.0.0")
   - `chore`, `style`, `test`, `ci` → skip (not notable to end users), unless the change is significant
 - New entries go under `## [Unreleased]`.
 - When a version tag is created, rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` and add a fresh empty `## [Unreleased]` section above it.
@@ -196,7 +195,7 @@ vMAJOR.MINOR.PATCH
 
 - **MAJOR** — incompatible API or behavioral changes (breaking changes, removed features, changed config format).
 - **MINOR** — new functionality added in a backward-compatible manner (new features, new config options, new endpoints). Also: core dependency MINOR bump.
-- **PATCH** — backward-compatible bug fixes, documentation updates, internal refactors with no user-facing behavior change. Also: core dependency PATCH bump.
+- **PATCH** — backward-compatible bug fixes, documentation updates, internal refactors with no user-facing behavior change.
 
 ### Determining the Next Version
 
@@ -205,8 +204,9 @@ vMAJOR.MINOR.PATCH
 3. Classify changes using Conventional Commits types:
    - Any commit with a `BREAKING CHANGE` footer or `!` after the type → bump **MAJOR**.
    - Any `feat` commit → bump **MINOR** (unless MAJOR is already bumped).
-   - Core dependency (`foreline/*`) version change → match the bump level of the dependency itself.
-   - Only `fix`, `refactor`, `perf`, `docs`, `style`, `chore`, `test` → bump **PATCH**.
+   - Core dependency (`foreline/*`) **MAJOR or MINOR** bump → match that exact MAJOR.MINOR version for clean-bitrix.
+   - Core dependency **PATCH** bump only → bump clean-bitrix **PATCH** if desired, or skip if no code changes.
+   - Only `fix`, `refactor`, `perf`, `docs`, `style`, `chore`, `test` with no core dependency changes → bump **PATCH**.
 4. If the user specifies a version explicitly, use that instead.
 
 ### Creating the Tag
@@ -214,13 +214,13 @@ vMAJOR.MINOR.PATCH
 Use **annotated tags** with a summary of changes:
 
 ```powershell
-git tag -a v1.2.0 -m "v1.2.0: <short summary of release>"
+git tag -a v2.0.0 -m "v2.0.0: <short summary of release>"
 ```
 
 ### Tag Message Format
 
 ```
-v1.2.0: <one-line summary>
+v2.0.0: <one-line summary>
 
 Changes:
 - feat(scope): description
@@ -242,15 +242,15 @@ List the commit subjects since the previous tag, grouped by type. Keep it concis
 ### Good Examples
 
 ```
-v1.1.8: update foreline/clean to v1.1.4
+v2.0.0: align with foreline/clean v2.0.0
 
 Changes:
-- chore(deps): update foreline/clean v1.1.3 → v1.1.4
-- chore(config): add GitHub Copilot instructions and prompts
+- chore(deps): upgrade foreline/clean v1.1.3 → v2.0.0
+- chore(deps): upgrade foreline/clean-ui v1.0.1 → v1.1.0
 ```
 
 ```
-v1.2.0: add async event retry policies
+v2.1.0: add async event retry policies
 
 Changes:
 - feat(event): add per-subscriber retry policy with exponential backoff
