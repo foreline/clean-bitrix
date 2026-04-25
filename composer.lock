@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d5e59d5535a0e3b169eaf5b23d0bfc11",
+    "content-hash": "2eb5cd71ca4e87a30ce362986951a0e8",
     "packages": [
         {
             "name": "brick/math",
@@ -132,11 +132,11 @@
         },
         {
             "name": "foreline/clean",
-            "version": "v1.2.2",
+            "version": "v2.0.0",
             "source": {
                 "type": "git",
                 "url": "ssh://git@gitlab.foreline.ru:2222/foreline/clean.git",
-                "reference": "e3f482a7a6e9ef7bc8dcd7cb71b9a86b32c5e1de"
+                "reference": "44d33bf13ae3c65f106ef0649cc6eb60b809affc"
             },
             "require": {
                 "dragonmantank/cron-expression": "^3.4",
@@ -186,18 +186,18 @@
                 }
             ],
             "description": "PHP clean architecture framework",
-            "time": "2026-04-12T17:07:26+00:00"
+            "time": "2026-04-25T08:45:50+00:00"
         },
         {
             "name": "foreline/clean-ui",
-            "version": "v1.0.1",
+            "version": "v1.1.0",
             "source": {
                 "type": "git",
                 "url": "ssh://git@gitlab.foreline.ru:2222/foreline/clean-ui.git",
-                "reference": "98f906a6c0b19aa53aa3811f3a9627daf8578e4e"
+                "reference": "fce240bea5c52aaff4ff7a89819bac5456570179"
             },
             "require": {
-                "foreline/clean": "^1.0.01",
+                "foreline/clean": ">1.0.01",
                 "php": ">=8.0",
                 "symfony/http-foundation": ">6.3"
             },
@@ -225,7 +225,7 @@
                 }
             ],
             "description": "UI library for clean framework",
-            "time": "2026-02-11T09:14:40+00:00"
+            "time": "2026-04-25T08:59:11+00:00"
         },
         {
             "name": "foreline/io-response",
@@ -996,7 +996,7 @@
         },
         {
             "name": "symfony/polyfill-mbstring",
-            "version": "v1.34.0",
+            "version": "v1.36.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/polyfill-mbstring.git",
@@ -1057,7 +1057,7 @@
                 "shim"
             ],
             "support": {
-                "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.34.0"
+                "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.36.0"
             },
             "funding": [
                 {
@@ -1081,7 +1081,7 @@
         },
         {
             "name": "symfony/polyfill-php83",
-            "version": "v1.34.0",
+            "version": "v1.36.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/polyfill-php83.git",
@@ -1137,7 +1137,7 @@
                 "shim"
             ],
             "support": {
-                "source": "https://github.com/symfony/polyfill-php83/tree/v1.34.0"
+                "source": "https://github.com/symfony/polyfill-php83/tree/v1.36.0"
             },
             "funding": [
                 {
@@ -1654,11 +1654,11 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "2.1.46",
+            "version": "2.1.51",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/a193923fc2d6325ef4e741cf3af8c3e8f54dbf25",
-                "reference": "a193923fc2d6325ef4e741cf3af8c3e8f54dbf25",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/dc3b523c45e714c70de2ac5113b958223b55dc59",
+                "reference": "dc3b523c45e714c70de2ac5113b958223b55dc59",
                 "shasum": ""
             },
             "require": {
@@ -1703,7 +1703,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-04-01T09:25:14+00:00"
+            "time": "2026-04-21T18:22:01+00:00"
         },
         {
             "name": "phpunit/php-code-coverage",
