@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-04-25
+
 ### Changed
 - Upgraded foreline/clean to v2.0.0 and clean-ui to v1.1.0 for new features and bug fixes.
 - Updated foreline/clean to v1.2.1.
