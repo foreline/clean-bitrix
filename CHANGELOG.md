@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-04-26
+
+### Changed
+- Updated foreline/clean to v2.4.0 with enhanced architecture patterns.
+- Updated Symfony polyfills (mbstring, php83) to v1.37.0.
+
 ## [2.0.0] - 2026-04-25
 
 ### Changed
