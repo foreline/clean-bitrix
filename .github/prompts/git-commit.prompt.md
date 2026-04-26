@@ -1,7 +1,7 @@
 ﻿---
 description: "clean-bitrix: Commit changes using Conventional Commits"
 model: Claude Haiku 4.5 (copilot)
-tools: ['read', 'search', 'execute/runInTerminal']
+tools: ['read', 'search', 'execute/runInTerminal', 'edit']
 ---
 
 # Git Commit
