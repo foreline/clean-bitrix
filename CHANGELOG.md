@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-04-27
+
+### Added
+- LifecycleStatusViewHelper for rendering lifecycle status as colored chips in the UI.
+
+### Changed
+- Updated foreline/clean to v2.5.1.
+
 ## [2.1.0] - 2026-04-26
 
 ### Changed
