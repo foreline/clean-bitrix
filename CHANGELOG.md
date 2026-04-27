@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.2] - 2026-04-27
+
+### Added
+- LifecycleStatusViewHelper: add `renderBadge()` for rendering lifecycle status badges in list grid cells.
+- LifecycleStatusViewHelper: add `getInProgressCodes()` and `getFinalCodes()` for filtering enum cases by lifecycle state.
+- LifecycleStatusViewHelper: add `colorToken()` convenience accessor for palette CSS tokens.
+
+### Changed
+- LifecycleStatusViewHelper: refactor HTML escaping logic into dedicated `escape()` helper method.
+
 ## [2.2.1] - 2026-04-27
 
 ### Changed
