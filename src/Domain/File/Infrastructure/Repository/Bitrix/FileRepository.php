@@ -112,7 +112,7 @@ class FileRepository extends FileProxy implements FileRepositoryInterface
         $params = [
             'select'    => $select,
             'cache' => [
-                'ttl'   => 3600,
+                'ttl'   => 0,
                 'cache_joins'   => true,
             ],
             'count_total'   => true
