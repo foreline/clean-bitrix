@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.3] - 2026-04-29
+
+### Fixed
+- FileRepository: disable cache for file repository queries to ensure fresh data.
+- LifecycleStatusViewHelper: add missing UI classes (ui-label-inner, ui-label-fill) to lifecycle status chip markup.
+
 ## [2.2.2] - 2026-04-27
 
 ### Added
