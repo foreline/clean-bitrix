@@ -48,14 +48,14 @@ final class LifecycleStatusViewHelper
     public static function renderBadge(?AbstractLifecycleStatus $status): string
     {
         if ( null === $status ) {
-            return '<span class="ui-label ui-label-light lifecycle-status-badge lifecycle-status-badge--empty">—</span>';
+            return '<span class="ui-label ui-label-inner ui-label-fill ui-label-light lifecycle-status-badge lifecycle-status-badge--empty">—</span>';
         }
         
         $token = $status->getColorPalette()->cssToken();
         $title = '' !== $status->getHint() ? $status->getHint() : $status->getName();
         
         return sprintf(
-            '<span class="ui-label ui-label-%s lifecycle-status-badge" title="%s">%s</span>',
+            '<span class="ui-label ui-label-inner ui-label-fill ui-label-%s lifecycle-status-badge" title="%s">%s</span>',
             self::escape($token),
             self::escape($title),
             self::escape($status->getName()),
