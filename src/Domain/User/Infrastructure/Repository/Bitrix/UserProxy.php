@@ -177,9 +177,13 @@ class UserProxy extends Repository
             $user->setExtId($extId);
         }
     
-        if ( $obj->entity->hasField(UserRepositoryInterface::AVATAR . '_ref') && null !== ( $avatarObj = $obj->get(UserRepositoryInterface::AVATAR . '_ref')) ) {
-            $user->setAvatar((new FileProxy())->objectToEntity($avatarObj));
+        if ( $obj->entity->hasField(UserRepositoryInterface::AVATAR . '_ref') ) {
+            // Custom \Domain\User\Infrastructure\Repository\Bitrix\UserTable: avatar loaded via JOIN — do not make a separate DB query
+            if ( null !== ( $avatarObj = $obj->get(UserRepositoryInterface::AVATAR . '_ref') ) ) {
+                $user->setAvatar((new FileProxy())->objectToEntity($avatarObj));
+            }
         } elseif ( null !== ($avatarId = $obj->get(UserRepositoryInterface::AVATAR)) ) {
+            // Standard \Bitrix\Main\UserTable (via foreign reference): _ref field unavailable, fall back to separate query
             if ( $avatar = (new GetFile())->get($avatarId) ) {
                 $user->setAvatar($avatar);
             }
