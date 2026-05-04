@@ -9,6 +9,8 @@ use Bitrix\Main\SystemException;
 use Bitrix\Main\UserFieldTable;
 use Bitrix\Main\UserTable;
 use CFile;
+use Domain\Exception\NotAuthorizedException;
+use Domain\File\Infrastructure\Repository\Bitrix\FileProxy;
 use Domain\File\UseCase\GetFile;
 use Domain\User\Aggregate\User;
 use Domain\User\Aggregate\UserInterface;
@@ -101,9 +103,8 @@ class UserProxy extends Repository
     /**
      * @param mixed $obj
      * @return UserInterface
-     * @throws ArgumentException
-     * @throws ObjectPropertyException
-     * @throws SystemException
+     * @throws NotAuthorizedException
+     * @throws Exception
      */
     public function objectToEntity(mixed $obj): UserInterface
     {
@@ -176,7 +177,9 @@ class UserProxy extends Repository
             $user->setExtId($extId);
         }
     
-        if ( null !== ($avatarId = $obj->get(UserRepositoryInterface::AVATAR)) ) {
+        if ( $obj->entity->hasField(UserRepositoryInterface::AVATAR . '_ref') && null !== ( $avatarObj = $obj->get(UserRepositoryInterface::AVATAR . '_ref')) ) {
+            $user->setAvatar((new FileProxy())->objectToEntity($avatarObj));
+        } elseif ( null !== ($avatarId = $obj->get(UserRepositoryInterface::AVATAR)) ) {
             if ( $avatar = (new GetFile())->get($avatarId) ) {
                 $user->setAvatar($avatar);
             }

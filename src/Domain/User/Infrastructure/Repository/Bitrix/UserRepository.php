@@ -8,7 +8,7 @@ use Bitrix\Main\Engine\CurrentUser;
 use Bitrix\Main\Entity\ExpressionField;
 use Bitrix\Main\ObjectPropertyException;
 use Bitrix\Main\UserGroupTable;
-use Bitrix\Main\UserTable;
+use Domain\User\Infrastructure\Repository\Bitrix\UserTable;
 use CUser;
 use Domain\Repository\FieldsInterface;
 use Domain\Repository\FilterInterface;
