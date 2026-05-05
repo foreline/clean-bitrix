@@ -7,11 +7,11 @@ use Bitrix\Main\ArgumentException;
 use Bitrix\Main\ObjectPropertyException;
 use Bitrix\Main\SystemException;
 use Bitrix\Main\UserFieldTable;
-use Bitrix\Main\UserTable;
 use CFile;
 use Domain\Exception\NotAuthorizedException;
 use Domain\File\Infrastructure\Repository\Bitrix\FileProxy;
 use Domain\File\UseCase\GetFile;
+use Domain\User\Aggregate\Group;
 use Domain\User\Aggregate\User;
 use Domain\User\Aggregate\UserInterface;
 use Domain\User\Infrastructure\Repository\UserRepositoryInterface;
@@ -92,7 +92,7 @@ class UserProxy extends Repository
         if ( !empty($user->getConfirmPassword()) ) {
             $data[UserRepositoryInterface::CONFIRM_PASSWORD] = $user->getConfirmPassword();
         }
-    
+        
         if ( $user->getAvatar() ) {
             $data[UserRepositoryInterface::AVATAR] = CFile::MakeFileArray($user->getAvatar()->getSource());
         }
@@ -129,7 +129,7 @@ class UserProxy extends Repository
         if ( null !== $lastName = $obj->get(UserRepositoryInterface::LAST_NAME) ) {
             $user->setLastName((string)$lastName);
         }
-    
+        
         if ( null !== $secondName = $obj->get(UserRepositoryInterface::SECOND_NAME) ) {
             $user->setSecondName((string)$secondName);
         }
@@ -154,29 +154,55 @@ class UserProxy extends Repository
             $user->setConfirmationCode((string)$confirmCode);
         }
         
-        /*if ( null !== $obj->get(UserRepositoryInterface::GROUPS) ) {
-            $ormGroups = $obj->get(UserRepositoryInterface::GROUPS)?->get(UserRepositoryInterface::GROUPS);
-            // @todo
-        }*/
+        // Option C: ORM JOIN for Group Codes.
+        // When find() uses fetchCollection(), $obj->get(USER_GROUPS_RELATION) returns a
+        // fully-populated OneToMany Collection (empty = user has no groups, non-null).
+        // When fetchObject() is called directly (e.g. getCurrentUser), the field is still
+        // in the SELECT but may only carry one group row — objectToEntity() is safe because
+        // find() is the canonical multi-entity path and always uses fetchCollection().
+        // Fallback to getUserGroupIds() when USER_GROUPS was not included in the query
+        // (e.g. standard \Bitrix\Main\UserTable used without the local extension).
+        $ormGroups = $obj->entity->hasField(UserTable::USER_GROUPS_RELATION)
+            ? $obj->get(UserTable::USER_GROUPS_RELATION)
+            : null;
         
-        // @fixme
-        if ( $groupsId = UserTable::getUserGroupIds($user->getId()) ) {
+        if ( null !== $ormGroups ) {
+            // ORM collection path: zero extra DB queries
+            foreach ( $ormGroups as $ormUserGroup ) {
+                $ormGroup = $ormUserGroup->get('GROUP');
+                if ( null === $ormGroup ) {
+                    continue;
+                }
+                // BooleanField with configureValues('N','Y') returns PHP bool via fetchCollection()
+                if ( !$ormGroup->get('ACTIVE') ) {
+                    continue;
+                }
+                $code = (string)$ormGroup->get('STRING_ID');
+                if ( '' === $code ) {
+                    continue;
+                }
+                $group = new Group();
+                $group->setId((int)$ormUserGroup->get('GROUP_ID'));
+                $group->setCode($code);
+                $group->setActive(true);
+                $user->addGroup($group);
+                $user->addRole(new self::$role($code));
+            }
+        } elseif ( $groupsId = UserTable::getUserGroupIds($user->getId()) ) {
+            // Fallback: USER_GROUPS not in schema/query — use legacy two-query approach
             $groups = (new GroupManager())
                 ->filterById($groupsId)
                 ->find();
-            
             foreach ( $groups as $group ) {
                 $user->addGroup($group);
-                //$user->addRole(new Role($group->getCode()));
-                $role = new self::$role($group->getCode());
-                $user->addRole($role);
+                $user->addRole(new self::$role($group->getCode()));
             }
         }
-    
+        
         if ( null !== ($extId = $obj->get(UserRepositoryInterface::EXT_ID)) ) {
             $user->setExtId($extId);
         }
-    
+        
         if ( $obj->entity->hasField(UserRepositoryInterface::AVATAR . '_ref') ) {
             // Custom \Domain\User\Infrastructure\Repository\Bitrix\UserTable: avatar loaded via JOIN — do not make a separate DB query
             if ( null !== ( $avatarObj = $obj->get(UserRepositoryInterface::AVATAR . '_ref') ) ) {

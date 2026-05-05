@@ -169,6 +169,15 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
         
         $params = $this->getParams($filter, $sort, $limit, $fields);
         
+        // Inject USER_GROUPS fields for Option C: ORM JOIN for Group Codes.
+        // These are added after getParams() because prepareSelectFields() would strip unknown relation names.
+        // fetchCollection() in find() will correctly accumulate the OneToMany collection per user entity.
+        $params['select'] = array_merge($params['select'] ?? ['*'], [
+            UserTable::USER_GROUPS_RELATION . '.GROUP_ID',
+            UserTable::USER_GROUPS_RELATION . '.GROUP.STRING_ID',
+            UserTable::USER_GROUPS_RELATION . '.GROUP.ACTIVE',
+        ]);
+        
         // Bitrix b_user table columns are uppercase
         if (
             array_key_exists('order', $params)
@@ -223,9 +232,15 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
             return null;
         }
         
+        // Use fetchCollection() instead of a fetchObject() loop so that Bitrix ORM
+        // correctly merges multiple SQL rows (one per group) into a single entity
+        // with a fully populated USER_GROUPS OneToMany collection.
+        $ormCollection = $this->result->fetchCollection();
+        
         $users = new UserCollection();
         
-        while ( $user = $this->fetchObject() ) {
+        foreach ( $ormCollection as $ormObject ) {
+            $user = $this->objectToEntity($ormObject);
             self::$cache[$user->getId()] = $user;
             $users->addItem($user);
         }
@@ -404,7 +419,7 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
     public function getCurrentUser(array $userFields = []): ?UserInterface
     {
         $currentUserId = (int)CurrentUser::get()->getId();
-        return $this->findById($currentUserId, $userFields);
+        return $this->findById($currentUserId/*, $userFields*/);
     }
     
     /**
