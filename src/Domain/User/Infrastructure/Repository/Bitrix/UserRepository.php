@@ -378,6 +378,7 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
         $this->updateGroups($user);
         
         UserTable::cleanCache();
+        UserProxy::clearUserGroupsCache($user->getId());
         
         return true;
     }
@@ -396,6 +397,7 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
         unset(self::$cache[$id]);
         
         UserTable::cleanCache();
+        UserProxy::clearUserGroupsCache($id);
         
         return true;
         

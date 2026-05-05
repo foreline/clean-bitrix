@@ -28,6 +28,28 @@ class UserProxy extends Repository
     private static ?Role $role = null;
     
     /**
+     * Кэш групп пользователей (в рамках одного запроса).
+     * Ключ — ID пользователя, значение — массив [{id, code}].
+     * Заполняется ORM-путём; fallback-путь сначала смотрит сюда.
+     *
+     * @var array<int, array<int, array{id: int, code: string}>>
+     */
+    private static array $userGroupsCache = [];
+    
+    /**
+     * Сбрасывает кэш групп пользователя.
+     * Вызывается после изменения состава групп.
+     */
+    public static function clearUserGroupsCache(int $userId = 0): void
+    {
+        if ( 0 < $userId ) {
+            unset(self::$userGroupsCache[$userId]);
+        } else {
+            self::$userGroupsCache = [];
+        }
+    }
+    
+    /**
      *
      */
     public function __construct()
@@ -167,7 +189,10 @@ class UserProxy extends Repository
             : null;
         
         if ( null !== $ormGroups ) {
-            // ORM collection path: zero extra DB queries
+            // ORM collection path: zero extra DB queries.
+            // Populate the in-request cache so the fallback path below can reuse
+            // the data for the same user referenced from other entity queries.
+            $cached = [];
             foreach ( $ormGroups as $ormUserGroup ) {
                 $ormGroup = $ormUserGroup->get('GROUP');
                 if ( null === $ormGroup ) {
@@ -187,15 +212,38 @@ class UserProxy extends Repository
                 $group->setActive(true);
                 $user->addGroup($group);
                 $user->addRole(new self::$role($code));
+                $cached[] = ['id' => $group->getId(), 'code' => $code];
             }
-        } elseif ( $groupsId = UserTable::getUserGroupIds($user->getId()) ) {
-            // Fallback: USER_GROUPS not in schema/query — use legacy two-query approach
-            $groups = (new GroupManager())
-                ->filterById($groupsId)
-                ->find();
-            foreach ( $groups as $group ) {
-                $user->addGroup($group);
-                $user->addRole(new self::$role($group->getCode()));
+            self::$userGroupsCache[$user->getId()] = $cached;
+        } else {
+            // Fallback: USER_GROUPS not in entity schema — e.g. user loaded as a reference
+            // from a Ticket/Asset ORM query that does not carry our UserTable extension.
+            // Check the in-request cache first (populated by UserRepository::find() above)
+            // to avoid re-querying the same user multiple times across entity fields.
+            $userId = $user->getId();
+            if ( array_key_exists($userId, self::$userGroupsCache) ) {
+                foreach ( self::$userGroupsCache[$userId] as $gd ) {
+                    $group = new Group();
+                    $group->setId($gd['id']);
+                    $group->setCode($gd['code']);
+                    $group->setActive(true);
+                    $user->addGroup($group);
+                    $user->addRole(new self::$role($gd['code']));
+                }
+            } else {
+                $groupsId = UserTable::getUserGroupIds($userId);
+                $cached   = [];
+                if ( !empty($groupsId) ) {
+                    $groups = (new GroupManager())
+                        ->filterById($groupsId)
+                        ->find();
+                    foreach ( $groups as $group ) {
+                        $user->addGroup($group);
+                        $user->addRole(new self::$role($group->getCode()));
+                        $cached[] = ['id' => $group->getId(), 'code' => $group->getCode()];
+                    }
+                }
+                self::$userGroupsCache[$userId] = $cached;
             }
         }
         
