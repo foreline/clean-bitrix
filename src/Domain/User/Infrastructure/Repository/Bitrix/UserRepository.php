@@ -100,24 +100,23 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
             $filter = array_change_key_case($filter, CASE_UPPER);
             
             if ( array_key_exists('GROUP_ID', $filter) ) {
-                /*$params['runtime'][] = new ReferenceField('GROUP', GroupTable::class,
-                    Join::on('this.GROUP_ID', 'ref.ID')
-                );*/
+                // Pre-resolve user IDs belonging to the requested group.
+                // Using a JOIN filter (UserGroupTable:USER.GROUP_ID) shares the same
+                // b_user_group join alias with our USER_GROUPS OneToMany relation, causing
+                // the WHERE condition to restrict the relation collection to only the
+                // filtered group — all other groups for the user are silently dropped.
+                // A separate lookup + =ID IN (...) avoids this conflict entirely.
+                $rows = UserGroupTable::getList([
+                    'select' => ['USER_ID'],
+                    'filter' => ['=GROUP_ID' => (int)$filter['GROUP_ID']],
+                ])->fetchAll();
                 
-                /*$params['runtime'][] = new ReferenceField('GROUP_ID', UserGroupTable::class,
-                    //\Bitrix\Main\Entity\Query\Join::on('this.ID', 'ref.USER_ID')
-                    Join::on('this.ID', 'ref.USER_ID')
-                    ->where('ref.GROUP_ID', 'this.GROUP')
-                );*/
-                
-                $filter['Bitrix\Main\UserGroupTable:USER.GROUP_ID'] = (int)$filter['GROUP_ID'];
-                
-                $params['data_doubling'] = false;
+                $filter['=ID'] = !empty($rows)
+                    ? array_column($rows, 'USER_ID')
+                    : [-1]; // no users in this group → guaranteed empty result
                 
                 unset($filter['GROUP_ID']);
             }
-            
-            $params['filter'] = $filter;
         }
         
         /*if ( 0 < count($sort) ) {
