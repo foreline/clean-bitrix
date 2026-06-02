@@ -8,8 +8,10 @@ use Domain\Event\Event;
 use Domain\Event\Enum\EventStoreStatusEnum;
 use Domain\Event\EventInterface;
 use Domain\Event\Monitoring\EventPurgeStrategyInterface;
+use Domain\Event\Publisher;
 use Domain\Event\RetryableSubscriberInterface;
 use Domain\Event\RetryPolicy;
+use Domain\Events\ExceptionOccurredEvent;
 use Domain\User\Service\GetCurrentUser;
 use Exception;
 use Infrastructure\Event\Message\AsyncEventMessage;
@@ -119,7 +121,8 @@ final class AsyncEventMessageHandler
                 $eventDispatchId
             );
             
-        } catch (Throwable $e) {
+        } catch ( Throwable $e ) {
+            Publisher::getInstance()->publish(new ExceptionOccurredEvent($e));
             $this->handleFailure($message, $e);
         }
     }
