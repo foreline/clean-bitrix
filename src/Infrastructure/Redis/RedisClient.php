@@ -20,15 +20,11 @@ class RedisClient
      */
     public function __construct(?PredisClient $client = null)
     {
-        /*if ( empty($_ENV['REDIS_HOST']) ) {
-            return;
-        }*/
-        
         $this->client = $client ?? new PredisClient([
-            'scheme'   => $_ENV['REDIS_SCHEME'] ?: 'tcp',
-            'host'     => $_ENV['REDIS_HOST'] ?: '127.0.0.1',
-            'port'     => $_ENV['REDIS_PORT'] ?: 6379,
-            'password' => $_ENV['REDIS_PASSWORD'] ?: '',
+            'scheme'   => $_ENV['REDIS_SCHEME']   ?? 'tcp',
+            'host'     => $_ENV['REDIS_HOST']     ?? '127.0.0.1',
+            'port'     => $_ENV['REDIS_PORT']     ?? 6379,
+            'password' => $_ENV['REDIS_PASSWORD'] ?? '',
             'database' => 0,
         ]);
     }

@@ -122,22 +122,22 @@ class BitrixEventStoreMonitor implements EventStoreMonitorInterface
         $now = time();
         
         $completedLastMinute = EventDispatchTable::getCount([
-            '=' . EventDispatchTable::STATUS       => EventStoreStatusEnum::COMPLETED->value,
+            '='  . EventDispatchTable::STATUS       => EventStoreStatusEnum::COMPLETED->value,
             '>=' . EventDispatchTable::PROCESSED_AT => BitrixDateTime::createFromTimestamp($now - 60),
         ]);
         
         $completedLastHour = EventDispatchTable::getCount([
-            '=' . EventDispatchTable::STATUS       => EventStoreStatusEnum::COMPLETED->value,
+            '='  . EventDispatchTable::STATUS       => EventStoreStatusEnum::COMPLETED->value,
             '>=' . EventDispatchTable::PROCESSED_AT => BitrixDateTime::createFromTimestamp($now - 3600),
         ]);
         
         $completedLast24Hours = EventDispatchTable::getCount([
-            '=' . EventDispatchTable::STATUS       => EventStoreStatusEnum::COMPLETED->value,
+            '='  . EventDispatchTable::STATUS       => EventStoreStatusEnum::COMPLETED->value,
             '>=' . EventDispatchTable::PROCESSED_AT => BitrixDateTime::createFromTimestamp($now - 86400),
         ]);
         
         $failedLastHour = EventDispatchTable::getCount([
-            '=' . EventDispatchTable::STATUS       => EventStoreStatusEnum::FAILED->value,
+            '='  . EventDispatchTable::STATUS       => EventStoreStatusEnum::FAILED->value,
             '>=' . EventDispatchTable::PROCESSED_AT => BitrixDateTime::createFromTimestamp($now - 3600),
         ]);
         
@@ -286,12 +286,8 @@ class BitrixEventStoreMonitor implements EventStoreMonitorInterface
      * @throws SystemException
      * @throws Exception
      */
-    private function queryEntries(
-        array $filter,
-        array $order = [],
-        int $limit = 100,
-        int $offset = 0
-    ): EventStoreEntryCollection {
+    private function queryEntries(array $filter, array $order = [], int $limit = 100, int $offset = 0): EventStoreEntryCollection
+    {
         $params = [
             'filter' => $filter,
             'select' => [
@@ -344,9 +340,7 @@ class BitrixEventStoreMonitor implements EventStoreMonitorInterface
             ),
             attempts:        (int)($row[strtoupper(EventDispatchTable::ATTEMPTS)] ?? $row[EventDispatchTable::ATTEMPTS] ?? 0),
             error:           $row[strtoupper(EventDispatchTable::ERROR)] ?? $row[EventDispatchTable::ERROR] ?? null,
-            occurredOn:      $this->toDateTime(
-                $row[self::ALIAS_OCCURRED_ON] ?? null
-            ),
+            occurredOn:      $this->toDateTime($row[self::ALIAS_OCCURRED_ON] ?? null ),
             processedAt:     $this->toNullableDateTime(
                 $row[strtoupper(EventDispatchTable::PROCESSED_AT)] ?? $row[EventDispatchTable::PROCESSED_AT] ?? null
             ),
