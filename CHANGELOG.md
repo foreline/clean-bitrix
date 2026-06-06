@@ -7,16 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.7.0] - 2026-05-04
-
-### Changed
-- Updated foreline/clean to v2.7.0 for enhanced architecture support and feature alignment.
-
-## [2.3.0] - 2026-05-04
-
-### Added
-- UserRepository: add avatar file reference mapping via Bitrix ORM Relations for direct file object access.
-
 ## [2.2.3] - 2026-04-29
 
 ### Fixed
