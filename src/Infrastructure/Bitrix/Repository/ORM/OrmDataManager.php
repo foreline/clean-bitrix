@@ -22,6 +22,8 @@ use Bitrix\Main\ORM\Fields\Relations\Reference;
 use Bitrix\Main\SystemException;
 use Exception;
 use Psr\Log\LoggerInterface;
+use ReflectionClass;
+use ReflectionProperty;
 
 /**
  * Should be extended by EntityTable classes
@@ -33,6 +35,19 @@ class OrmDataManager extends DataManager
     public static string $entityTableClass;
     private static bool $dryRun = false;
     private static array $detectedChanges = [];
+    
+    /**
+     * Domain model/entity class used to resolve default values for table fields.
+     * Override in child classes to enable model-driven defaults.
+     * @var class-string|null
+     */
+    protected static ?string $modelClass = null;
+    
+    /**
+     * Optional explicit mapping of Bitrix field names to model property names.
+     * @var array<string, string>
+     */
+    protected static array $fieldPropertyMap = [];
     
     /**
      * @throws Exception
@@ -208,7 +223,206 @@ class OrmDataManager extends DataManager
         self::manageNullable($scalarFields, $actualFields, $connection);
         
         // Handle default values
-        //self::manageDefault($scalarFields, $actualFields, $connection);
+        self::manageDefault($scalarFields, $actualFields, $connection);
+    }
+    
+    /**
+     * Returns the domain model/entity class associated with this table.
+     * @return class-string|null
+     */
+    public static function getModelClass(): ?string
+    {
+        return static::$modelClass;
+    }
+    
+    /**
+     * Sets the domain model/entity class associated with this table.
+     * @param class-string|null $modelClass
+     * @return void
+     */
+    public static function setModelClass(?string $modelClass): void
+    {
+        static::$modelClass = $modelClass;
+    }
+    
+    /**
+     * Returns the explicit mapping of Bitrix field names to model property names.
+     * @return array<string, string>
+     */
+    public static function getFieldPropertyMap(): array
+    {
+        return static::$fieldPropertyMap;
+    }
+    
+    /**
+     * Sets the explicit mapping of Bitrix field names to model property names.
+     * @param array<string, string> $fieldPropertyMap
+     * @return void
+     */
+    public static function setFieldPropertyMap(array $fieldPropertyMap): void
+    {
+        static::$fieldPropertyMap = $fieldPropertyMap;
+    }
+    
+    /**
+     * Resolves the default value for a field from the associated domain model.
+     * Falls back to the ORM field's own configured default value.
+     * @param mixed $field
+     * @return mixed|null
+     */
+    protected static function getFieldDefaultValue(mixed $field): mixed
+    {
+        $modelClass = static::getModelClass();
+        
+        if ($modelClass !== null && class_exists($modelClass)) {
+            $property = static::findModelProperty($field->getName(), $modelClass);
+            
+            if ($property !== null && $property->hasDefaultValue()) {
+                return static::normalizeDefaultValue($property->getDefaultValue(), $field);
+            }
+        }
+        
+        // Fallback to the field's own default value if available
+        if (method_exists($field, 'getDefaultValue')) {
+            $defaultValue = $field->getDefaultValue();
+            if ($defaultValue !== null) {
+                return static::normalizeDefaultValue($defaultValue, $field);
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Finds a model property matching the given Bitrix field name.
+     * Supports explicit mapping and case-insensitive normalized matching.
+     * @param string $fieldName
+     * @param class-string $modelClass
+     * @return ReflectionProperty|null
+     */
+    protected static function findModelProperty(string $fieldName, string $modelClass): ?ReflectionProperty
+    {
+        $reflection = new ReflectionClass($modelClass);
+        $propertyMap = static::getFieldPropertyMap();
+        
+        if (isset($propertyMap[$fieldName])) {
+            $mappedName = $propertyMap[$fieldName];
+            if ($reflection->hasProperty($mappedName)) {
+                return $reflection->getProperty($mappedName);
+            }
+            return null;
+        }
+        
+        $normalizedFieldName = static::normalizeName($fieldName);
+        
+        foreach ($reflection->getProperties() as $property) {
+            if (static::normalizeName($property->getName()) === $normalizedFieldName) {
+                return $property;
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Normalizes a name for matching by removing separators and lowercasing.
+     * E.g. "ACTIVE" / "active" / "date_created" / "dateCreated" all become "active" / "datecreated".
+     * @param string $name
+     * @return string
+     */
+    protected static function normalizeName(string $name): string
+    {
+        return strtolower(str_replace(['_', '-'], '', $name));
+    }
+    
+    /**
+     * Normalizes a default value according to the field type.
+     * Boolean values are converted to Bitrix 'Y'/'N' representation.
+     * @param mixed $value
+     * @param mixed $field
+     * @return mixed|null
+     */
+    protected static function normalizeDefaultValue(mixed $value, mixed $field): mixed
+    {
+        if ($field instanceof BooleanField) {
+            if (is_bool($value)) {
+                return $value ? 'Y' : 'N';
+            }
+            
+            if (is_string($value) && in_array(strtoupper($value), ['Y', 'N'], true)) {
+                return strtoupper($value);
+            }
+            
+            return null;
+        }
+        
+        if ($value instanceof \BackedEnum) {
+            return $value->value;
+        }
+        
+        if (is_scalar($value)) {
+            return $value;
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Formats a default value as a SQL literal.
+     * @param mixed $value
+     * @param mixed $field
+     * @return string
+     */
+    protected static function formatDefaultValue(mixed $value, mixed $field): string
+    {
+        if ($field instanceof BooleanField) {
+            return $value === 'Y' ? "'Y'" : "'N'";
+        }
+        
+        if (is_int($value) || is_float($value)) {
+            return (string) $value;
+        }
+        
+        if (is_string($value)) {
+            return "'" . addslashes($value) . "'";
+        }
+        
+        return 'NULL';
+    }
+    
+    /**
+     * Returns the string representation of a default value for comparison with DB metadata.
+     * @param mixed $value
+     * @param mixed $field
+     * @return string
+     */
+    protected static function getDefaultValueString(mixed $value, mixed $field): string
+    {
+        if ($field instanceof BooleanField) {
+            return $value === 'Y' ? 'Y' : 'N';
+        }
+        
+        return (string) $value;
+    }
+    
+    /**
+     * Compares the actual database default with the expected default value.
+     * @param mixed $actualDefault
+     * @param mixed $expectedValue
+     * @param mixed $field
+     * @return bool
+     */
+    protected static function defaultsEqual(mixed $actualDefault, mixed $expectedValue, mixed $field): bool
+    {
+        if ($actualDefault === null && $expectedValue === null) {
+            return true;
+        }
+        
+        if ($actualDefault === null || $expectedValue === null) {
+            return false;
+        }
+        
+        return (string) $actualDefault === static::getDefaultValueString($expectedValue, $field);
     }
     
     /**
@@ -218,10 +432,20 @@ class OrmDataManager extends DataManager
      */
     public static function getSqlField(mixed $field, Connection $connection): string
     {
-        return $connection->getSqlHelper()->quote($field->getName())
+        $sql = $connection->getSqlHelper()->quote($field->getName())
             . ' ' . $connection->getSqlHelper()->getColumnTypeByField($field)
             . ( $field->isNullable() ? ' DEFAULT NULL' : ' NOT NULL' )
-            ;
+        ;
+        
+        if ( !$field->isNullable() ) {
+            $defaultValue = static::getFieldDefaultValue($field);
+            
+            if ($defaultValue !== null) {
+                $sql .= ' DEFAULT ' . static::formatDefaultValue($defaultValue, $field);
+            }
+        }
+        
+        return $sql;
     }
     
     /**
@@ -1121,6 +1345,57 @@ class OrmDataManager extends DataManager
                 } else {
                     $connection->query($sqlField);
                 }
+            }
+        }
+    }
+    
+    /**
+     * Manages default values of fields.
+     * Issues MODIFY statements when the expected default value differs from the actual one.
+     * @param ScalarField[] $scalarFields
+     * @param array $actualFields
+     * @param Connection $connection
+     * @return void
+     */
+    public static function manageDefault(array $scalarFields, array $actualFields, Connection $connection): void
+    {
+        foreach ( $scalarFields as $scalarField ) {
+            
+            // Skip fields that were just added in this updateTable() call
+            if ( !array_key_exists($scalarField->getName(), $actualFields) ) {
+                continue;
+            }
+            
+            // Nullable fields default to NULL; only non-nullable fields get an explicit DEFAULT here
+            if ( $scalarField->isNullable() ) {
+                continue;
+            }
+            
+            $expectedDefault = static::getFieldDefaultValue($scalarField);
+            
+            if ($expectedDefault === null) {
+                continue;
+            }
+            
+            $actualDefault = $actualFields[$scalarField->getName()]['Default'] ?? null;
+            
+            if ( static::defaultsEqual($actualDefault, $expectedDefault, $scalarField) ) {
+                continue;
+            }
+            
+            $sqlField = 'ALTER TABLE `' . static::getTableName() . '` MODIFY ' . self::getSqlField($scalarField, $connection);
+            
+            self::$logger?->info($sqlField);
+            
+            if ( self::$dryRun ) {
+                self::$detectedChanges[] = [
+                    'type' => 'modify_field_default',
+                    'table' => static::getTableName(),
+                    'field' => $scalarField->getName(),
+                    'sql' => $sqlField,
+                ];
+            } else {
+                $connection->query($sqlField);
             }
         }
     }

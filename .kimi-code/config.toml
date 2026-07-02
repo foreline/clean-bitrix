@@ -1,0 +1,5 @@
+# Kimi Code CLI configuration for foreline/crud
+# This project uses a universal AI setup — skills are shared from .github/skills/
+# to avoid duplicating files across different AI models.
+
+extra_skill_dirs = [".github/skills"]
