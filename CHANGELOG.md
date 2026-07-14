@@ -1,4 +1,4 @@
-﻿# Changelog
+# Changelog
 
 All notable changes to this project will be documented in this file.
 
@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `OrmDataManager`: support for model-driven database field defaults. Default values are read from the associated domain model/entity class and applied to `ADD`/`MODIFY` SQL statements, with boolean values mapped to Bitrix 'Y'/'N' representation.
 - `OrmDataManager`: `manageDefault()` to detect and reconcile changes to existing field default values.
 - `phpunit.xml` and `tests/bootstrap.php` to enable test execution outside a full Bitrix runtime.
+
+### Changed
+- Updated foreline/clean to v2.8.0.
 
 ## [2.2.3] - 2026-04-29
 
