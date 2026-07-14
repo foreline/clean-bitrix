@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.8.0] - 2026-07-14
+
 ### Added
 - `OrmDataManager`: support for model-driven database field defaults. Default values are read from the associated domain model/entity class and applied to `ADD`/`MODIFY` SQL statements, with boolean values mapped to Bitrix 'Y'/'N' representation.
 - `OrmDataManager`: `manageDefault()` to detect and reconcile changes to existing field default values.
