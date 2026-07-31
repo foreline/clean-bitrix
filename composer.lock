@@ -131,11 +131,11 @@
         },
         {
             "name": "foreline/clean",
-            "version": "v2.8.6",
+            "version": "v2.8.7",
             "source": {
                 "type": "git",
                 "url": "ssh://git@gitlab.foreline.ru:2222/foreline/clean.git",
-                "reference": "ed3e0a727b4db73766ac664ed298dfae58713e41"
+                "reference": "199cc0e45232f36d0376a387f2db3e4874475eac"
             },
             "require": {
                 "dragonmantank/cron-expression": "^3.4",
@@ -185,7 +185,7 @@
                 }
             ],
             "description": "PHP clean architecture framework",
-            "time": "2026-07-31T18:10:10+00:00"
+            "time": "2026-07-31T18:16:29+00:00"
         },
         {
             "name": "foreline/clean-ui",
