@@ -12,6 +12,7 @@ use Bitrix\Main\DB\SqlQueryException;
 use Bitrix\Main\Entity\Base;
 use Bitrix\Main\ORM\Data\DataManager;
 use Bitrix\Main\ORM\Fields\ScalarField;
+use Bitrix\Main\ORM\Fields\ArrayField;
 use Bitrix\Main\ORM\Fields\TextField;
 use Bitrix\Main\ORM\Fields\IntegerField;
 use Bitrix\Main\ORM\Fields\StringField;
@@ -432,8 +433,14 @@ class OrmDataManager extends DataManager
      */
     public static function getSqlField(mixed $field, Connection $connection): string
     {
+        // Bitrix maps ArrayField to varchar(255) by default, which silently
+        // truncates larger serialized payloads — store them as text instead.
+        $columnType = $field instanceof ArrayField
+            ? 'text'
+            : $connection->getSqlHelper()->getColumnTypeByField($field);
+
         $sql = $connection->getSqlHelper()->quote($field->getName())
-            . ' ' . $connection->getSqlHelper()->getColumnTypeByField($field)
+            . ' ' . $columnType
             . ( $field->isNullable() ? ' DEFAULT NULL' : ' NOT NULL' )
         ;
         
@@ -559,6 +566,15 @@ class OrmDataManager extends DataManager
                 $shouldModify = true;
             }
             
+        } elseif ( $field instanceof ArrayField ) {
+            if (
+                'text' !== $actualType
+                && 'longtext' !== $actualType
+                && 'mediumtext' !== $actualType
+                && 'tinytext' !== $actualType
+            ) {
+                $shouldModify = true;
+            }
         } elseif ( $field instanceof StringField ) {
             if ( !str_starts_with($actualType, 'varchar') && !str_starts_with($actualType, 'char') ) {
                 $shouldModify = true;
