@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.11.0] - 2026-08-20
+
+### Changed
+- Updated foreline/clean to v2.11.0 (adds `Domain\ValueObject` length-limited text VOs: `AbstractLengthLimitedText`, `ShortText`, `Text`, `MediumText`, `LongText`).
+
 ## [2.10.0] - 2026-08-20
 
 ### Changed
