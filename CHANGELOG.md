@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.10.0] - 2026-08-20
+
+### Changed
+- Updated foreline/clean to v2.10.0 (adds `Domain\ValueObject\LengthAwareStringValueObjectInterface` consumed by `foreline/clean-vo`).
+
+## [2.9.0] - 2026-08-01
+
+### Fixed
+- `OrmDataManager`: map ArrayField to text column instead of varchar(255).
+
+### Changed
+- Updated foreline/clean to v2.9.0.
+
 ## [2.8.0] - 2026-07-14
 
 ### Added

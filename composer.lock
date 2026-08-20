@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a269969267556e139a27ce83fc0f43ca",
+    "content-hash": "ef7ff88745722f6fcb981564a8060b19",
     "packages": [
         {
             "name": "brick/math",
@@ -131,11 +131,11 @@
         },
         {
             "name": "foreline/clean",
-            "version": "v2.9.0",
+            "version": "v2.10.0",
             "source": {
                 "type": "git",
                 "url": "ssh://git@gitlab.foreline.ru:2222/foreline/clean.git",
-                "reference": "3d6168d49e66486ae923d16d56d2e06369e20793"
+                "reference": "9dfc59a8d88e03616e83759403ba45dd1e583a2c"
             },
             "require": {
                 "dragonmantank/cron-expression": "^3.4",
@@ -185,7 +185,7 @@
                 }
             ],
             "description": "PHP clean architecture framework",
-            "time": "2026-08-01T18:50:15+00:00"
+            "time": "2026-08-20T18:55:28+00:00"
         },
         {
             "name": "foreline/clean-ui",

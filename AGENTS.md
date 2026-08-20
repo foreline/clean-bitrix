@@ -258,6 +258,14 @@ ADR conventions:
 - Standalone otherwise: `TITLE.md`
 - Use the template from `.github/prompts/create-adr.prompt.md`
 
+## Release and push policy
+
+- We are the maintainers of this library. The repo has two remotes: `github` and `gitlab`. All changes AND release tags are pushed to **all** remotes (`git push github main --tags && git push gitlab main --tags`). GitLab is release-critical (composer consumers fetch from there), but github must not silently fall behind.
+- Tagging conventions: see `.github/prompts/git-commit.prompt.md` (SemVer, annotated tags, conventional commits, CHANGELOG.md). A core dependency update (`foreline/clean`, `foreline/clean-ui`, `foreline/io-response`) always gets a tag.
+- Dependency cascade: after a `clean-bitrix` release, update downstream consumers — e.g. the servicedesk module: `composer update foreline/clean-bitrix -W`, commit the lock.
+
+---
+
 ## Quick reference for agents
 
 - Run `composer install` before any static analysis or test command.
