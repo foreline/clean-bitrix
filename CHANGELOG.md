@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.11.1] - 2026-08-29
+
+### Fixed
+- Base ORM `Repository::getParams()` no longer caches queries containing JOINs (`cache_joins` now `false`, the Bitrix ORM default). Joined queries over large tables produce serialized row sets of 100+ MB (one row per M2M combination), which OOMed PHP processes on managed-cache write and could never be stored anyway (memcached 1 MB item limit). Flat queries without JOINs are still cached for 1 hour.
+
 ## [2.11.0] - 2026-08-20
 
 ### Changed
