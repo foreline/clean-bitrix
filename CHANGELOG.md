@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.11.2] - 2026-08-30
+
+### Changed
+- Updated foreline/clean to v2.12.0 (`AbstractBridge` audit fields `createdBy`/`modifiedBy` are now typed against `Domain\User\Aggregate\UserInterface`, fixing load-time covariance fatals in bridge aggregates).
+
 ## [2.11.1] - 2026-08-29
 
 ### Fixed
