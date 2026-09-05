@@ -191,6 +191,11 @@ class FileRepository extends FileProxy implements FileRepositoryInterface
             $data['old_file'] = $file->getId();
         }
         
+        // CFile::SaveFile пишет b_file.EXTERNAL_ID из ключа external_id
+        if ( '' !== ( $extId = (string)$file->getExtId() ) ) {
+            $data['external_id'] = $extId;
+        }
+        
         $savePath = $this->getModuleId() ?: 'files';
         
         if ( !$fileId = CFile::SaveFile($data, $savePath/*, checkDuplicates: false*/) ) {
@@ -208,6 +213,10 @@ class FileRepository extends FileProxy implements FileRepositoryInterface
     {
         // @fixme
         CFile::UpdateDesc($file->getId(), $file->getDescription());
+        
+        if ( '' !== ( $extId = (string)$file->getExtId() ) ) {
+            CFile::UpdateExternalId($file->getId(), $extId);
+        }
         
         return true;
     }

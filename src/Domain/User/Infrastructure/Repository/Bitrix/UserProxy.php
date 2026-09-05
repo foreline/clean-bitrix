@@ -116,7 +116,13 @@ class UserProxy extends Repository
         }
         
         if ( $user->getAvatar() ) {
-            $data[UserRepositoryInterface::AVATAR] = CFile::MakeFileArray($user->getAvatar()->getSource());
+            // external_id прокидываем в копию PERSONAL_PHOTO, чтобы дедупликация по extId работала после сохранения
+            $data[UserRepositoryInterface::AVATAR] = CFile::MakeFileArray(
+                $user->getAvatar()->getSource(),
+                false,
+                false,
+                (string)$user->getAvatar()->getExtId()
+            );
         }
         
         return $data;

@@ -371,6 +371,24 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
         
         $userData = array_change_key_case($userData, CASE_UPPER);
         
+        $avatarKey = strtoupper(UserRepositoryInterface::AVATAR);
+        
+        if ( is_array($userData[$avatarKey] ?? null) ) {
+            $currentPhotoId = (int)( UserTable::getList([
+                'select' => [$avatarKey],
+                'filter' => ['=ID' => $user->getId()],
+            ])->fetch()[$avatarKey] ?? 0 );
+            
+            if ( 0 < $currentPhotoId && $currentPhotoId === $user->getAvatar()?->getId() ) {
+                // Аватар не менялся — не пересохраняем PERSONAL_PHOTO, чтобы не плодить копии файла
+                unset($userData[$avatarKey]);
+            } elseif ( 0 < $currentPhotoId ) {
+                // При замене аватара CFile::SaveFile удалит прежний файл PERSONAL_PHOTO
+                $userData[$avatarKey]['del'] = 'Y';
+                $userData[$avatarKey]['old_file'] = $currentPhotoId;
+            }
+        }
+        
         if ( !$result = $USER->Update($user->getId(), $userData) ) {
             throw new RuntimeException($USER->LAST_ERROR);
         }

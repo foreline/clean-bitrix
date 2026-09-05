@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.11.3] - 2026-09-05
+
+### Fixed
+- User avatar (`PERSONAL_PHOTO`) duplication on every user update (e.g. Bitrix24 user sync): `FileRepository::create()` now persists `b_file.EXTERNAL_ID` (via the `external_id` key of `CFile::SaveFile`) and `update()` saves it via `CFile::UpdateExternalId`, so extId-based dedup guards can actually match.
+- `FileProxy::objectToEntity()` now hydrates `source`/`path` from `SUBDIR` + `FILE_NAME` (previously only `arrayToEntity()` did), so `File::getHash()` on a reference-hydrated file reads real content instead of hashing an empty path.
+- `FileProxy::arrayToEntity()` now hydrates `external_id`.
+- `UserProxy::entityToArray()` propagates the avatar `extId` through `CFile::MakeFileArray()` into the `PERSONAL_PHOTO` copy.
+- `UserRepository::update()` no longer re-copies an unchanged avatar into a new `b_file` row, and deletes the replaced `PERSONAL_PHOTO` file via `del`/`old_file` instead of orphaning it.
+
 ## [2.11.2] - 2026-08-30
 
 ### Changed

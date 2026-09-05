@@ -8,6 +8,7 @@ use Bitrix\Main\EO_File;
 use Bitrix\Main\FileTable;
 use Bitrix\Main\ObjectPropertyException;
 use Bitrix\Main\SystemException;
+use COption;
 use DateTimeImmutable;
 use Domain\File\Aggregate\File;
 use Domain\File\Infrastructure\Repository\FileRepositoryInterface;
@@ -150,6 +151,13 @@ class FileProxy
             $file->setFileName((string)$fileName);
         }
         
+        // SOURCE / PATH — необходимы для чтения содержимого файла (File::getContent()/getHash())
+        if ( '' !== $file->getSubdir() && '' !== $file->getFileName() ) {
+            $source = '/' . $this->getUploadDir() . '/' . $file->getSubdir() . '/' . $file->getFileName();
+            $file->setSource($source);
+            $file->setPath($_SERVER['DOCUMENT_ROOT'] . $source);
+        }
+        
         // ORIGINAL_NAME
         if ( null !== ( $originalName = $obj->get(FileRepositoryInterface::ORIGINAL_NAME) ) ) {
             $file->setOriginalName((string)$originalName);
@@ -203,7 +211,19 @@ class FileProxy
         if ( array_key_exists(FileRepositoryInterface::DESCRIPTION, $data) ) {
             $file->setDescription((string)$data[FileRepositoryInterface::DESCRIPTION]);
         }
+        if ( array_key_exists(FileRepositoryInterface::EXT_ID, $data) ) {
+            $file->setExtId((string)$data[FileRepositoryInterface::EXT_ID]);
+        }
         
         return $file;
+    }
+    
+    /**
+     * Директория загрузки Bitrix (относительно DOCUMENT_ROOT)
+     * @return string
+     */
+    protected function getUploadDir(): string
+    {
+        return COption::GetOptionString('main', 'upload_dir', 'upload');
     }
 }
