@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.11.4] - 2026-09-06
+
+### Changed
+- Raised the `foreline/clean` floor to ^2.12.1 and updated the lock: `GetCurrentUser` system-context flag; `UpdateUser::checkPermissions()` permits updates in system context (fixes background syncs running as a system user failing with "Нет доступа").
+
 ## [2.11.3] - 2026-09-05
 
 ### Fixed
