@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-09-10
+
+### Changed
+- BREAKING: require foreline/clean ^3.0.0 with the explicit SourceHolderInterface::getSource() contract; raise clean-ui floor to ^1.1.1 and refresh dependency locks.
+
 ## [2.11.4] - 2026-09-06
 
 ### Changed

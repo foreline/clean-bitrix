@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "73b18cadb27bde27ca67271aef2a8039",
+    "content-hash": "1e4e524daf4ea0c56028dbe945287734",
     "packages": [
         {
             "name": "brick/math",
@@ -131,11 +131,11 @@
         },
         {
             "name": "foreline/clean",
-            "version": "v2.12.1",
+            "version": "v3.0.0",
             "source": {
                 "type": "git",
                 "url": "ssh://git@gitlab.foreline.ru:2222/foreline/clean.git",
-                "reference": "0aa81b543f8a33f3d7cf7daab578b2ab3f476411"
+                "reference": "5b18834754715aebbd5c2c5bc3cfec319338a03f"
             },
             "require": {
                 "dragonmantank/cron-expression": "^3.4",
@@ -185,15 +185,15 @@
                 }
             ],
             "description": "PHP clean architecture framework",
-            "time": "2026-09-06T14:11:19+00:00"
+            "time": "2026-09-10T07:57:30+00:00"
         },
         {
             "name": "foreline/clean-ui",
-            "version": "v1.1.0",
+            "version": "v1.1.1",
             "source": {
                 "type": "git",
                 "url": "ssh://git@gitlab.foreline.ru:2222/foreline/clean-ui.git",
-                "reference": "fce240bea5c52aaff4ff7a89819bac5456570179"
+                "reference": "352507a17d289d20cbb329f8ccebb5694010e6a2"
             },
             "require": {
                 "foreline/clean": ">1.0.01",
@@ -224,7 +224,7 @@
                 }
             ],
             "description": "UI library for clean framework",
-            "time": "2026-04-25T08:59:11+00:00"
+            "time": "2026-09-10T08:03:08+00:00"
         },
         {
             "name": "foreline/io-response",
