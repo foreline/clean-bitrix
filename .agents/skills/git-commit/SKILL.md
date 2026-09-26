@@ -1,24 +1,43 @@
 ---
 name: git-commit
-description: Commit changes for the clean-bitrix project using Conventional Commits, automatic changelog updates, and SemVer tagging. Use this skill when the user asks to commit staged or unstaged changes, create a release commit, update dependencies, or tag a new version.
+description: Commit changes for the clean-bitrix project using Conventional Commits, a brief dated changelog, and SemVer tagging. Use this skill when the user asks to commit staged or unstaged changes, create a release commit, update dependencies, or tag a new version.
 ---
 
 # Git Commit
 
-## Instructions
+Commit assistant for the **clean-bitrix** project — a PHP library providing Clean
+Architecture abstractions for 1C-Bitrix CMS, part of the
+[Foreline](https://github.com/foreline/clean) ecosystem. Three duties, in order:
+conventional commit message → brief changelog entry → **one** commit containing
+the staged changes **and** the changelog update.
 
-You are a git commit assistant for the **clean-bitrix** project — a PHP library providing Clean Architecture abstractions for 1C-Bitrix CMS, part of the [Foreline](https://github.com/foreline/clean) ecosystem.
+## Speed rules (follow strictly)
 
-1. Review staged changes using `git diff --cached`.
-2. If no files are staged, stage all tracked and untracked changes with `git add -A`, then re-check. If still nothing to commit (clean working tree), report that and stop.
-3. Analyze staged diffs and classify each changed file by feature area.
-4. **Commit splitting rule (mandatory):**
-   - If staged files touch different features or issues, create separate commits — one per feature/issue.
-   - **Dependency updates** (`composer.lock`, `composer.json`) MUST be in their own commit, separate from code or config changes.
-   - Execute the planned commit(s) immediately, without asking for confirmation.
-5. Write Conventional Commit messages in English.
-6. **Changelog:** After every commit, update `CHANGELOG.md` following the rules below.
-7. **Tagging:** After committing, evaluate whether a new version tag is warranted. Follow the SemVer tagging rules below.
+1. Run all git commands in the repo root (`D:/github/clean-bitrix`).
+2. Stage **everything first**, including untracked files:
+   - `git ls-files --others --exclude-standard` (metadata only — list, don't open)
+   - `git add -A`
+   - If both the staged diff and the untracked list are empty, exit and report
+     "nothing to commit".
+3. Inspect staged changes with **metadata only**:
+   - `git diff --cached --name-status`
+   - `git diff --cached --stat`
+   - Never run `git diff --cached` (full content).
+4. Read content only of small source-of-truth files when needed to explain the why.
+5. Do not run tests, linters, or builds.
+6. **Never** create a separate commit for the changelog (no `chore: update changelog`,
+   no `docs: changelog`). The changelog is always part of the main commit.
+
+## Grouping
+
+- One logical change = one commit.
+- Multiple **unrelated** changes (different features/issues) → split into separate
+  commits by area. Do not create one giant mixed commit.
+- **Dependency updates** (`composer.lock`, `composer.json`) MUST be in their own
+  `chore(deps): ...` commit, separate from code or config changes.
+- To split, commit with pathspecs: `git commit -m "<msg>" -- <paths>` — always
+  including `CHANGELOG.md` in each commit's pathspec (update it per commit).
+- Execute the planned commit(s) immediately, without asking for confirmation.
 
 ## Project-Specific Rules
 
@@ -27,9 +46,9 @@ You are a git commit assistant for the **clean-bitrix** project — a PHP librar
 This project critically depends on `foreline/clean` (and `foreline/clean-ui`, `foreline/io-response`). These are internal Foreline ecosystem libraries that provide the core Clean Architecture abstractions this project implements.
 
 **When `composer.lock` changes:**
-1. Always inspect the diff to identify **which packages** changed and **what versions** they moved to.
+1. Identify **which packages** changed and **what versions** they moved to (`git diff --cached -- composer.lock` is allowed for this file only — or read `composer.json` constraints).
 2. Classify the dependency update:
-   - **Core dependency** (`foreline/clean`, `foreline/clean-ui`, `foreline/io-response`) — these are **always significant**. A version bump in `foreline/clean` likely means new interfaces, entities, or patterns that this library must align with.
+   - **Core dependency** (`foreline/clean`, `foreline/clean-ui`, `foreline/io-response`) — these are **always significant**.
    - **Other dependencies** (`symfony/*`, `predis/*`, etc.) — treat as routine maintenance.
 3. Commit `composer.lock` (and `composer.json` if changed) separately from other changes using `chore(deps): ...` type.
 4. In the commit body, explicitly list the package name and version transition (e.g., `foreline/clean v1.1.3 → v1.1.4`).
@@ -38,7 +57,7 @@ This project critically depends on `foreline/clean` (and `foreline/clean-ui`, `f
 
 **clean-bitrix version MUST track `foreline/clean` versions at both MAJOR and MINOR levels.** These two libraries are tightly coupled — clean-bitrix implements the abstractions defined in foreline/clean, so their version branches must align to signal feature parity and API stability to consumers.
 
-> **Tracked foreline/clean version: 2.8**
+> **Tracked foreline/clean version: 3.1**
 
 **Rules:**
 - If `foreline/clean` changes its **MAJOR or MINOR version** (e.g., v2.0.0 → v2.1.0 or v2.0.0 → v3.0.0), clean-bitrix MUST be bumped to match that **MAJOR.MINOR** version (e.g., v2.1.0 or v3.0.0). Commit with `chore(deps)!: ...` (note the `!` for MAJOR bumps) and **update the tracked version above** in this skill file.
@@ -50,7 +69,7 @@ This project critically depends on `foreline/clean` (and `foreline/clean-ui`, `f
 
 **A MAJOR or MINOR version bump in any `foreline/*` package MUST trigger a new tagged release of clean-bitrix**, even if no source code changed. Rationale: downstream consumers of clean-bitrix need to know that the underlying abstractions have been updated and which version branch they're aligned with.
 
-- `foreline/clean` MAJOR or MINOR bump → set clean-bitrix to the **same MAJOR.MINOR version** as `foreline/clean` (e.g., foreline/clean v2.0.0 → clean-bitrix v2.0.0; foreline/clean v2.1.0 → clean-bitrix v2.1.0).
+- `foreline/clean` MAJOR or MINOR bump → set clean-bitrix to the **same MAJOR.MINOR version** as `foreline/clean` (e.g., foreline/clean v2.1.0 → clean-bitrix v2.1.0).
 - `foreline/clean` PATCH bump (bug fixes only) → bump clean-bitrix **PATCH** if no code changes, or continue with next commit's natural bump.
 - For `foreline/clean-ui` and `foreline/io-response`, use the same logic but these are less likely to require MAJOR bumps.
 
@@ -60,14 +79,13 @@ This project critically depends on `foreline/clean` (and `foreline/clean-ui`, `f
 - Sub-scopes by feature area: `event`, `redis`, `repository`, `mailer`, `user`, `file`, `http`, `form`.
 - Common universal scopes: `docs`, `tests`, `config`, `ci`, `deps`.
 - Keep scopes short, lowercase, and consistent within the project.
-- If changes span multiple unrelated areas, split into separate commits.
 
 ## Conventional Commits Format
 
 ```
-<type>(<scope>): <short imperative summary>
+<type>(<scope>): <imperative summary in English, max 72 chars>
 
-<optional body: what changed and why>
+<optional body: what and why, wrap at 100 chars>
 ```
 
 ### Types
@@ -86,7 +104,6 @@ This project critically depends on `foreline/clean` (and `foreline/clean-ui`, `f
 - Subject line in English, imperative mood, max 72 characters.
 - Body in English, concise — explain what and why, not implementation detail.
 - Add issue references when available: `Refs: #123`.
-- Do not commit unrelated changes together.
 
 ### Good Examples
 
@@ -109,69 +126,32 @@ fix(repository): prevent duplicate field mapping in Bxd7
 Skip fields already registered in the type map to avoid ORM query errors.
 ```
 
-```
-docs(adr): add ASYNC_EVENT_ARCHITECTURE decision record
-```
+## Changelog (mandatory, brief)
 
-## Changelog
-
-After every commit, update (or create) a `CHANGELOG.md` file in the project root following the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format.
-
-### Format
+File: `CHANGELOG.md` in the project root. If missing, create it with a `# Changelog`
+header. Simple list format, newest on top:
 
 ```markdown
 # Changelog
 
-All notable changes to this project will be documented in this file.
+## 2026-09-20
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [Unreleased]
-
-### Added
-- New features.
-
-### Changed
-- Changes to existing functionality.
-
-### Deprecated
-- Features that will be removed in upcoming releases.
-
-### Removed
-- Features that were removed.
-
-### Fixed
-- Bug fixes.
-
-### Security
-- Vulnerability fixes.
-
-## [1.0.0] - 2025-01-15
-
-### Added
-- Initial release.
+- feat(repository): add string filter operators to RangeFilterTranslator
+- chore(deps): update foreline/clean to v2.9.0
 ```
 
-### Rules
-
-- Map Conventional Commit types to changelog sections:
-  - `feat` → **Added**
-  - `fix` → **Fixed**
-  - `refactor`, `perf` → **Changed**
-  - `docs` → **Changed** (only if user-facing; skip internal docs)
-  - `chore(deps)` with core dependency update → **Changed** (e.g., "Updated foreline/clean to v2.0.0")
-  - `chore`, `style`, `test`, `ci` → skip (not notable to end users), unless the change is significant
-- New entries go under `## [Unreleased]`.
-- When a version tag is created, rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` and add a fresh empty `## [Unreleased]` section above it.
-- Each entry is a single concise line describing the user-visible change — not the raw commit message.
-- Keep entries in reverse chronological order within each section.
-- If `CHANGELOG.md` does not exist, create it and back-fill entries from the git log (`git log --oneline --format="%h %s (%ai)"`) grouped by existing tags. Use commit dates for tag sections.
-- Stage and include the changelog update in the same commit if it's a single-commit workflow. If committing has already happened, create a follow-up `docs(changelog): update CHANGELOG.md` commit.
+Rules:
+- One bullet per commit in this run, mirroring the commit subject line verbatim.
+- Reuse today's `## YYYY-MM-DD` heading if it already exists; otherwise add a new
+  heading directly under `# Changelog`.
+- Entries describe **what changed**, briefly — no bodies, no detail sections.
+- Leave pre-existing legacy sections (e.g. Keep-a-Changelog `[Unreleased]` blocks)
+  untouched; new entries always go into the dated list on top.
 
 ## SemVer Tagging
 
-After committing, autonomously decide whether to create a new version tag. Create an **annotated git tag** following [Semantic Versioning 2.0.0](https://semver.org/).
+After committing, autonomously decide whether to create a new version tag. Create an
+**annotated git tag** following [Semantic Versioning 2.0.0](https://semver.org/).
 
 ### When to Tag
 
@@ -185,16 +165,6 @@ Use your judgment. Create a tag when any of these apply:
 Do **not** tag for:
 - Trivial or internal-only changes (`chore`, `docs`, `style`, `ci`, `test`) that don't affect core dependencies, unless the user requests it.
 - Work-in-progress or partial features.
-
-### Version Format
-
-```
-vMAJOR.MINOR.PATCH
-```
-
-- **MAJOR** — incompatible API or behavioral changes (breaking changes, removed features, changed config format).
-- **MINOR** — new functionality added in a backward-compatible manner (new features, new config options, new endpoints). Also: core dependency MINOR bump.
-- **PATCH** — backward-compatible bug fixes, documentation updates, internal refactors with no user-facing behavior change.
 
 ### Determining the Next Version
 
@@ -210,35 +180,12 @@ vMAJOR.MINOR.PATCH
 
 ### Creating the Tag
 
-Use **annotated tags** with a summary of changes:
-
-```powershell
+```bash
 git tag -a v2.0.0 -m "v2.0.0: <short summary of release>"
 ```
 
-### Tag Message Format
-
-```
-v2.0.0: <one-line summary>
-
-Changes:
-- feat(scope): description
-- fix(scope): description
-- chore(deps): description
-```
-
-List the commit subjects since the previous tag, grouped by type. Keep it concise.
-
-### Rules
-
-- Always prefix versions with `v` (e.g., `v1.0.0`, not `1.0.0`).
-- Never tag uncommitted or dirty state — all changes must be committed first.
-- When tagging, first rename the `## [Unreleased]` section in `CHANGELOG.md` to the new version and commit that update before creating the tag.
-- Do not push the tag automatically — let the user decide when to push.
-- Pre-release versions use a hyphen suffix: `v1.2.0-alpha.1`, `v1.2.0-beta.2`, `v1.2.0-rc.1`.
-- The first stable release of the project is `v1.0.0`. Versions below `v1.0.0` (e.g., `v0.x.y`) indicate pre-stable development where MINOR may include breaking changes.
-
-### Good Examples
+Tag message format — one-line summary plus commit subjects since the previous tag,
+grouped by type:
 
 ```
 v2.0.0: align with foreline/clean v2.0.0
@@ -248,11 +195,11 @@ Changes:
 - chore(deps): upgrade foreline/clean-ui v1.0.1 → v1.1.0
 ```
 
-```
-v2.1.0: add async event retry policies
+### Rules
 
-Changes:
-- feat(event): add per-subscriber retry policy with exponential backoff
-- fix(event): prevent duplicate event dispatch on worker restart
-- docs(adr): add ASYNC_RETRY_POLICY decision record
-```
+- Always prefix versions with `v` (e.g., `v1.0.0`, not `1.0.0`).
+- Never tag uncommitted or dirty state — all changes must be committed first.
+- Tagging does NOT rename or restructure `CHANGELOG.md`; the dated list stays as-is.
+- Do not push the tag automatically — let the user decide when to push
+  (release pushes go to **all** remotes: `git push github main --tags && git push gitlab main --tags`).
+- Pre-release versions use a hyphen suffix: `v1.2.0-alpha.1`, `v1.2.0-beta.2`, `v1.2.0-rc.1`.
