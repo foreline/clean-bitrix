@@ -60,6 +60,7 @@ enum BitrixFilterOperator: string
             FilterOperator::CONTAINS,
             FilterOperator::STARTS_WITH,
             FilterOperator::ENDS_WITH => self::LIKE,
+            FilterOperator::NOT_CONTAINS => self::NOT_LIKE,
             default => throw new InvalidArgumentException(
                 "Operator {$operator->value} cannot be directly mapped to Bitrix ORM"
             ),

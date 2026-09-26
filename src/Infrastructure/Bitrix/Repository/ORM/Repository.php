@@ -194,6 +194,22 @@ abstract class Repository
         
         foreach ( $filter as $key => $value ) {
             
+            // Разрешение dotted-ключей вида 'organization.title': для одиночных
+            // ссылок имя поля в ORM имеет суффикс '_ref', а ссылки-коллекции (M2M)
+            // используют исходное имя, поэтому их пропускаем без изменений
+            if ( is_string($key) && str_contains($key, '.') ) {
+                $segments = explode('.', $key);
+                $firstSegment = $segments[0];
+                
+                if (
+                    in_array($firstSegment, static::getReferenceFields(), true)
+                    && !in_array($firstSegment, static::getCollectionReferenceFields(), true)
+                ) {
+                    $segments[0] = $firstSegment . '_ref';
+                    $key = implode('.', $segments);
+                }
+            }
+            
             if ( 'condition' === $key || 'CONDITION' === $key ) {
                 
                 //if ( is_array($value) ) {

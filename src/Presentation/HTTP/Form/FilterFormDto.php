@@ -34,6 +34,13 @@ abstract class FilterFormDto
     public const RANGE_DATE_FIELDS = [];
     
     /**
+     * String fields that support operator filtering (contains, not_contains, filled, unfilled)
+     *
+     * Format: ['field_name', 'nested.field_name']
+     */
+    public const RANGE_STRING_FIELDS = [];
+    
+    /**
      * Converts HTML form data to FilterInterface domain object
      *
      * @param array $data Raw form data with filter[...] prefixes
@@ -92,7 +99,8 @@ abstract class FilterFormDto
         $allRangeFields = array_merge(
             static::RANGE_INT_FIELDS,
             static::RANGE_FLOAT_FIELDS,
-            static::RANGE_DATE_FIELDS
+            static::RANGE_DATE_FIELDS,
+            static::RANGE_STRING_FIELDS
         );
         $data = self::processRangeFilterFields($data, $allRangeFields);
         
@@ -423,6 +431,7 @@ abstract class FilterFormDto
         $data = self::collectRangeFilterDataFromDotNotation($data, static::RANGE_INT_FIELDS);
         $data = self::collectRangeFilterDataFromDotNotation($data, static::RANGE_FLOAT_FIELDS);
         $data = self::collectRangeFilterDataFromDotNotation($data, static::RANGE_DATE_FIELDS);
+        $data = self::collectRangeFilterDataFromDotNotation($data, static::RANGE_STRING_FIELDS);
         
         // Process integer range fields
         foreach ( static::RANGE_INT_FIELDS as $field ) {
@@ -452,6 +461,18 @@ abstract class FilterFormDto
         foreach ( static::RANGE_DATE_FIELDS as $field ) {
             if ( isset($data[$field]) && is_array($data[$field]) ) {
                 $converted = self::convertDateRangeFilter($data[$field]);
+                if ( null !== $converted ) {
+                    $data[$field] = $converted;
+                } else {
+                    unset($data[$field]);
+                }
+            }
+        }
+        
+        // Обработка строковых операторных полей (contains, not_contains, filled, unfilled)
+        foreach ( static::RANGE_STRING_FIELDS as $field ) {
+            if ( isset($data[$field]) && is_array($data[$field]) ) {
+                $converted = self::convertStringRangeFilter($data[$field]);
                 if ( null !== $converted ) {
                     $data[$field] = $converted;
                 } else {
@@ -661,6 +682,47 @@ abstract class FilterFormDto
     }
     
     /**
+     * Converts string operator filter data from form values
+     *
+     * FILLED/UNFILLED не требуют значения; остальные операторы
+     * (contains, not_contains) требуют непустую строку в val.
+     *
+     * @param array $rangeData Raw range data from form
+     * @return array|null Converted range filter or null if empty
+     */
+    protected static function convertStringRangeFilter(array $rangeData): ?array
+    {
+        $opKey = RangeFilterKey::OPERATOR->value;
+        $valKey = RangeFilterKey::VALUE->value;
+        
+        if ( !isset($rangeData[$opKey]) ) {
+            return null;
+        }
+        
+        // Операторы без значения (заполнено / не заполнено)
+        if (
+            FilterOperator::FILLED->value === $rangeData[$opKey]
+            || FilterOperator::UNFILLED->value === $rangeData[$opKey]
+        ) {
+            return [$opKey => $rangeData[$opKey]];
+        }
+        
+        // Операторы со значением: значение должно быть непустой строкой
+        if (
+            isset($rangeData[$valKey])
+            && is_string($rangeData[$valKey])
+            && '' !== $rangeData[$valKey]
+        ) {
+            return [
+                $opKey => $rangeData[$opKey],
+                $valKey => $rangeData[$valKey],
+            ];
+        }
+        
+        return null;
+    }
+    
+    /**
      * Processes range filter fields for form output (toFormData)
      * Converts RangeFilterValue storage format back to form-friendly format
      * Preserves operator and value for proper UI restoration
@@ -700,6 +762,12 @@ abstract class FilterFormDto
                     $minKey => $rangeData[$minKey] ?? '',
                     $maxKey => $rangeData[$maxKey] ?? '',
                 ];
+                continue;
+            }
+            
+            // Операторы без значения (filled/unfilled): сохраняем только оператор
+            if ( !$op->requiresValue() ) {
+                $data[$field] = [$opKey => $op->value];
                 continue;
             }
             

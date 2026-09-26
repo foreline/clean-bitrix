@@ -20,12 +20,56 @@ class RangeFilterTranslator
      * Translate a single range filter to Bitrix ORM format
      *
      * @param string $field Field name
-     * @param array{op: string, val?: int|float, min?: int|float, max?: int|float} $rangeData
-     * @return array Bitrix ORM filter array
+     * @param array{op: string, val?: int|float|string, min?: int|float, max?: int|float} $rangeData
+     * @return array Bitrix ORM filter array; может содержать группы условий
+     *               (нумерованные списки массивов условий) для составных операторов
      */
     public static function translate(string $field, array $rangeData): array
     {
         $operator = FilterOperator::from($rangeData[RangeFilterKey::OPERATOR->value]);
+        
+        // Строковые операторы обрабатываются отдельно до общей ветки,
+        // так как формируют LIKE-паттерны и составные условия
+        
+        // FILLED: поле заполнено — IS NOT NULL и не пустая строка
+        // (неявный AND через нумерованный список одноэлементных массивов)
+        if (FilterOperator::FILLED === $operator) {
+            return [
+                ['!' . $field => null],
+                ['!' . $field => ''],
+            ];
+        }
+        
+        // UNFILLED: поле не заполнено — NULL или пустая строка (OR-группа)
+        if (FilterOperator::UNFILLED === $operator) {
+            return [
+                [
+                    'LOGIC' => 'OR',
+                    ['=' . $field => null],
+                    ['=' . $field => ''],
+                ],
+            ];
+        }
+        
+        // CONTAINS / STARTS_WITH / ENDS_WITH: префикс '%' сам обрамляет
+        // значение wildcard-ами `%...%` и экранирует служебные символы
+        // (LIKE ... ESCAPE '!'), поэтому значение передаётся в сыром виде.
+        // STARTS_WITH / ENDS_WITH префиксом не выразимы и деградируют до
+        // contains (прежнее поведение маппинга на LIKE).
+        if ( in_array($operator, [FilterOperator::CONTAINS, FilterOperator::STARTS_WITH, FilterOperator::ENDS_WITH], true) ) {
+            return [
+                BitrixFilterOperator::LIKE->prefixField($field)
+                => $rangeData[RangeFilterKey::VALUE->value],
+            ];
+        }
+        
+        // NOT_CONTAINS: префикс '!%' (NOT LIKE с тем же обрамлением)
+        if (FilterOperator::NOT_CONTAINS === $operator) {
+            return [
+                BitrixFilterOperator::NOT_LIKE->prefixField($field)
+                => $rangeData[RangeFilterKey::VALUE->value],
+            ];
+        }
         
         // Handle BETWEEN operator specially (requires two conditions)
         if (FilterOperator::BETWEEN === $operator) {
