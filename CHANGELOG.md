@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-15
+
+- chore(deps): require foreline/clean v3.2.0 with default text construction
+
 ## 2026-09-26
 
 - feat(repository): add string filter criteria operators
