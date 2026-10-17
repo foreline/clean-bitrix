@@ -148,6 +148,13 @@ Domain/{Entity}/Infrastructure/Repository/Bitrix/{Entity}Repository.php     # ad
 - Repositories use composition with `FilterInterface`, `SortInterface`, `LimitInterface`, `FieldsInterface`, and `GroupInterface`.
 - Reference fields should be loaded as domain entities, not stored as raw IDs.
 
+## Validation compatibility
+
+Iblock argument checks use native PHP conditions and the standard
+`InvalidArgumentException`. Invalid codes, IDs and linked-iblock properties
+retain their previous validation rules. The package no longer requires an
+assertion library; consumers should catch the standard exception class.
+
 ## Code style guidelines
 
 - Every PHP file must start with:

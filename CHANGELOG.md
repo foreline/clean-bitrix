@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-17
+
+- docs(validation): document native exceptions and dependency migration
+- chore(deps): require clean 3.3.1 and remove Webmozart
+- refactor(validation): replace Iblock assertions with native checks
+
 ## [3.2.1] - 2026-10-17
 
 ### Changed
