@@ -18,8 +18,8 @@ The library does not contain an executable application. It ships domain ports, B
 - **PHP:** 8.1+
 - **CMS / runtime:** 1C-Bitrix with D7 ORM
 - **Core framework packages:**
-  - `foreline/clean` (^2.7.6) — domain framework
-  - `foreline/clean-ui` (^1.1.0) — UI abstractions
+  - `foreline/clean` (^3.3.1) — domain framework
+  - `foreline/clean-ui` (^1.1.2) — UI abstractions
   - `foreline/io-response` — response objects
 - **External integrations:**
   - Bitrix D7 ORM (`Bitrix\Main\*`, `Bitrix\Iblock\*`)
@@ -29,7 +29,6 @@ The library does not contain an executable application. It ships domain ports, B
 - **Quality / testing:**
   - PHPUnit 9.6
   - PHPStan level 0
-  - `webmozart/assert`
   - `jetbrains/phpstorm-attributes`
 
 Private Foreline dependencies are resolved from internal GitLab repositories over SSH (`git@gitlab.foreline.ru:2222`).

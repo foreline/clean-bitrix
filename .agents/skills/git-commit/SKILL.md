@@ -57,7 +57,7 @@ This project critically depends on `foreline/clean` (and `foreline/clean-ui`, `f
 
 **clean-bitrix version MUST track `foreline/clean` versions at both MAJOR and MINOR levels.** These two libraries are tightly coupled — clean-bitrix implements the abstractions defined in foreline/clean, so their version branches must align to signal feature parity and API stability to consumers.
 
-> **Tracked foreline/clean version: 3.1**
+> **Tracked foreline/clean version: 3.3**
 
 **Rules:**
 - If `foreline/clean` changes its **MAJOR or MINOR version** (e.g., v2.0.0 → v2.1.0 or v2.0.0 → v3.0.0), clean-bitrix MUST be bumped to match that **MAJOR.MINOR** version (e.g., v2.1.0 or v3.0.0). Commit with `chore(deps)!: ...` (note the `!` for MAJOR bumps) and **update the tracked version above** in this skill file.

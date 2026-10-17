@@ -10,8 +10,7 @@ use CIBlock;
 use CIBlockProperty;
 use Domain\Exception\NotFoundException;
 use Exception;
-use Webmozart\Assert\Assert;
-use Webmozart\Assert\InvalidArgumentException;
+use InvalidArgumentException;
 
 /**
  *
@@ -127,7 +126,9 @@ class Iblock
      */
     public static function getJson(string $iblockCode): string
     {
-        Assert::notEmpty($iblockCode, 'Iblock Code is empty');
+        if ( empty($iblockCode) ) {
+            throw new InvalidArgumentException('Iblock Code is empty');
+        }
         
         $iblock = self::getIblockByCode($iblockCode);
         
@@ -144,8 +145,12 @@ class Iblock
             
             if ( 'E' === $property['PROPERTY_TYPE'] ) {
                 
-                Assert::notEmpty($property['LINK_IBLOCK_ID'], 'LINK_IBLOCK_ID of property "' . $property['CODE'] . '" is empty');
-                Assert::greaterThan((int)$property['LINK_IBLOCK_ID'], 0, 'LINK_IBLOCK_ID of property "' . $property['CODE'] . '" must be greater than 0');
+                if ( empty($property['LINK_IBLOCK_ID']) ) {
+                    throw new InvalidArgumentException('LINK_IBLOCK_ID of property "' . $property['CODE'] . '" is empty');
+                }
+                if ( 0 >= (int)$property['LINK_IBLOCK_ID'] ) {
+                    throw new InvalidArgumentException('LINK_IBLOCK_ID of property "' . $property['CODE'] . '" must be greater than 0');
+                }
                 
                 $propertyIblockCode = self::getIblockCode((int)$property['LINK_IBLOCK_ID']);
                 $property['XML_ID'] = $propertyIblockCode;
@@ -175,7 +180,9 @@ class Iblock
      */
     public static function getIblockById(int $iblockId): array
     {
-        Assert::greaterThan($iblockId, 0, 'IBlock ID must be greater than 0. Given ID is "' . $iblockId . '"');
+        if ( 0 >= $iblockId ) {
+            throw new InvalidArgumentException('IBlock ID must be greater than 0. Given ID is "' . $iblockId . '"');
+        }
         
         $res = IblockTable::getList([
             'filter' => [
@@ -202,7 +209,9 @@ class Iblock
      */
     public static function getIblockByCode(string $iblockCode): array
     {
-        Assert::notEmpty($iblockCode, 'Iblock code is empty');
+        if ( empty($iblockCode) ) {
+            throw new InvalidArgumentException('Iblock code is empty');
+        }
         
         $res = IblockTable::getList([
             'filter' => [
