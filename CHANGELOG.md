@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.2.1] - 2026-10-17
+
+### Changed
+- Require foreline/clean 3.3 with boolean and semantic active/sort value objects.
+
 ## 2026-10-15
 
 - chore(deps): require foreline/clean v3.2.0 with default text construction
