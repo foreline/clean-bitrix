@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "85bdeac1320e8034b649c6baa520a2e9",
+    "content-hash": "b98a84627b556ed1ac101618a3c62d7e",
     "packages": [
         {
             "name": "brick/math",
@@ -131,11 +131,11 @@
         },
         {
             "name": "foreline/clean",
-            "version": "v3.3.0",
+            "version": "v3.3.1",
             "source": {
                 "type": "git",
                 "url": "ssh://git@gitlab.foreline.ru:2222/foreline/clean.git",
-                "reference": "4cd00074c858eb7398cb7497d3e2eac2b64268e9"
+                "reference": "39deb3c99b31f3dbc702af2a3bab2a71b5967e53"
             },
             "require": {
                 "dragonmantank/cron-expression": "^3.4",
@@ -145,8 +145,7 @@
                 "ramsey/uuid": "^4.8",
                 "symfony/http-foundation": ">6.3",
                 "symfony/messenger": "^7.4",
-                "symfony/scheduler": "^7.3",
-                "webmozart/assert": "^1.11"
+                "symfony/scheduler": "^7.3"
             },
             "require-dev": {
                 "jetbrains/phpstorm-attributes": "*",
@@ -185,18 +184,18 @@
                 }
             ],
             "description": "PHP clean architecture framework",
-            "time": "2026-10-17T07:48:12+00:00"
+            "time": "2026-10-17T15:13:39+00:00"
         },
         {
             "name": "foreline/clean-ui",
-            "version": "v1.1.1",
+            "version": "v1.1.2",
             "source": {
                 "type": "git",
                 "url": "ssh://git@gitlab.foreline.ru:2222/foreline/clean-ui.git",
-                "reference": "352507a17d289d20cbb329f8ccebb5694010e6a2"
+                "reference": "c9960f96dc3a8f2144661af1143316d7fe8013a3"
             },
             "require": {
-                "foreline/clean": ">1.0.01",
+                "foreline/clean": "^3.3.1",
                 "php": ">=8.0",
                 "symfony/http-foundation": ">6.3"
             },
@@ -224,7 +223,7 @@
                 }
             ],
             "description": "UI library for clean framework",
-            "time": "2026-09-10T08:03:08+00:00"
+            "time": "2026-10-17T15:15:32+00:00"
         },
         {
             "name": "foreline/io-response",
@@ -1246,64 +1245,6 @@
                 }
             ],
             "time": "2026-05-25T06:06:12+00:00"
-        },
-        {
-            "name": "webmozart/assert",
-            "version": "1.12.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/webmozarts/assert.git",
-                "reference": "9be6926d8b485f55b9229203f962b51ed377ba68"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/webmozarts/assert/zipball/9be6926d8b485f55b9229203f962b51ed377ba68",
-                "reference": "9be6926d8b485f55b9229203f962b51ed377ba68",
-                "shasum": ""
-            },
-            "require": {
-                "ext-ctype": "*",
-                "ext-date": "*",
-                "ext-filter": "*",
-                "php": "^7.2 || ^8.0"
-            },
-            "suggest": {
-                "ext-intl": "",
-                "ext-simplexml": "",
-                "ext-spl": ""
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-master": "1.10-dev"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Webmozart\\Assert\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Bernhard Schussek",
-                    "email": "bschussek@gmail.com"
-                }
-            ],
-            "description": "Assertions to validate method input/output with nice error messages.",
-            "keywords": [
-                "assert",
-                "check",
-                "validate"
-            ],
-            "support": {
-                "issues": "https://github.com/webmozarts/assert/issues",
-                "source": "https://github.com/webmozarts/assert/tree/1.12.1"
-            },
-            "time": "2025-10-29T15:56:20+00:00"
         }
     ],
     "packages-dev": [
