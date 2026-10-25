@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-25
+
+- chore(deps): require clean-ui 1.2.0 for native tab titles
+
 ## 2026-10-17
 
 - docs(validation): document native exceptions and dependency migration

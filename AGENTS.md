@@ -19,7 +19,7 @@ The library does not contain an executable application. It ships domain ports, B
 - **CMS / runtime:** 1C-Bitrix with D7 ORM
 - **Core framework packages:**
   - `foreline/clean` (^3.3.1) — domain framework
-  - `foreline/clean-ui` (^1.1.2) — UI abstractions
+  - `foreline/clean-ui` (^1.2.0) — UI abstractions
   - `foreline/io-response` — response objects
 - **External integrations:**
   - Bitrix D7 ORM (`Bitrix\Main\*`, `Bitrix\Iblock\*`)
