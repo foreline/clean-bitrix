@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-04
+
+- chore(deps): require restored clean-ui 1.2.1
+
 ## 2026-10-25
 
 - chore(deps): require clean-ui 1.2.0 for native tab titles
