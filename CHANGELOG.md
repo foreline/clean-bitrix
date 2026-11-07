@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.4.0] - 2026-11-07
+
+- Add nullable boolean storage and consistent ORM filters for ordinary unique default flags, compatible with positional backup INSERTs.
+- Cover persistence, filtering, uniqueness and dump/restore with real-database integration tests.
+
 ## 2026-11-04
 
 - chore(deps): require restored clean-ui 1.2.1

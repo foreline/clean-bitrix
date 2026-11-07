@@ -32,6 +32,12 @@ use ReflectionProperty;
  */
 class OrmDataManager extends DataManager
 {
+    /** Поддерживает bool-фильтры nullable-полей в обоих API Bitrix. */
+    public static function getQueryClass(): string
+    {
+        return NullableBooleanQuery::class;
+    }
+
     private static ?LoggerInterface $logger = null;
     public static string $entityTableClass;
     private static bool $dryRun = false;
