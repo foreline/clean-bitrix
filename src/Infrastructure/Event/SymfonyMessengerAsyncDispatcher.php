@@ -70,11 +70,15 @@ final class SymfonyMessengerAsyncDispatcher implements BatchAsyncDispatcherInter
             }
             $connection->commitTransaction();
         } catch (Throwable $error) {
-            $connection->rollbackTransaction();
+            try {
+                $connection->rollbackTransaction();
+            } catch (\Bitrix\Main\DB\TransactionException $rollbackError) {
+                // Bitrix restores the savepoint, then reports a nested rollback.
+            }
             $this->logger->error('Atomic event publication failed', ['event' => $event::class, 'exception' => $error]);
             // Ошибка должна дойти до вызывающей операции. Sync fallback после
             // частичной/неопределённой записи скрывает потерю и дублирует эффекты.
-            throw $error;
+            throw new RuntimeException('Не удалось сохранить событие. Повторите попытку позже.', 0, $error);
         }
     }
 

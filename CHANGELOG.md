@@ -2,6 +2,8 @@
 
 ## 2026-11-08
 
+- fix(event): preserve queue failure diagnostics through nested rollback
+
 - feat(event): publish atomic batches and index delivery processing
 
 - chore(deps): require clean v3.4.0 and clean-ui v1.2.2
