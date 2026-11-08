@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-08
+
+- chore(deps): require clean v3.4.0 and clean-ui v1.2.2
+
 ## [3.4.0] - 2026-11-07
 
 - Add nullable boolean storage and consistent ORM filters for ordinary unique default flags, compatible with positional backup INSERTs.
