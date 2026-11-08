@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Infrastructure\Event\Transport;
 
+use Bitrix\Main\Application;
 use Bitrix\Main\ArgumentException;
 use Bitrix\Main\ObjectPropertyException;
 use Bitrix\Main\SystemException;
@@ -62,6 +63,7 @@ final class DatabaseTransport implements TransportInterface
                     '<=' . EventDispatchTable::NEXT_RETRY_AT => new DateTime(),
                 ],
             ],
+            'select' => [EventDispatchTable::ID, EventDispatchTable::EVENT_STORE_ID, EventDispatchTable::SUBSCRIBER_CLASS],
             'order' => [
                 EventDispatchTable::ID => 'ASC',
             ],
@@ -69,7 +71,7 @@ final class DatabaseTransport implements TransportInterface
         ])->fetch();
         
         if ( false === $dispatchRow || null === $dispatchRow ) {
-            // No pending messages — sleep to avoid busy-waiting
+            // No pending messages вЂ” sleep to avoid busy-waiting
             usleep($this->pollingIntervalMs * 1000);
             return [];
         }
@@ -78,17 +80,16 @@ final class DatabaseTransport implements TransportInterface
         $eventStoreId = (int)$dispatchRow[EventDispatchTable::EVENT_STORE_ID];
         
         // 2. Atomically claim the dispatch by updating status
-        $updateResult = EventDispatchTable::update($dispatchId, [
-            EventDispatchTable::STATUS => EventStoreStatusEnum::PROCESSING->value,
-            EventDispatchTable::ATTEMPTS => (int)$dispatchRow[EventDispatchTable::ATTEMPTS] + 1,
-            EventDispatchTable::PROCESSING_STARTED_AT => new DateTime(),
-        ]);
-        
-        if ( !$updateResult->isSuccess() ) {
-            // Another worker claimed it — skip
+        $connection = Application::getConnection();
+        $connection->queryExecute(
+            "UPDATE servicedesk_event_dispatch SET status = 'processing', attempts = attempts + 1, "
+            . "processing_started_at = NOW() WHERE id = " . $dispatchId . " AND status = 'pending'"
+            . " AND (next_retry_at IS NULL OR next_retry_at <= NOW())"
+        );
+        if ( 1 !== $connection->getAffectedRowsCount() ) {
             return [];
         }
-        
+
         // 3. Fetch the serialized event body from event store
         $eventRow = EventStoreTable::getList([
             'filter' => [
@@ -102,7 +103,7 @@ final class DatabaseTransport implements TransportInterface
         ])->fetch();
         
         if ( false === $eventRow || null === $eventRow ) {
-            // Orphaned dispatch row — mark as failed
+            // Orphaned dispatch row вЂ” mark as failed
             EventDispatchTable::update($dispatchId, [
                 EventDispatchTable::STATUS => EventStoreStatusEnum::FAILED->value,
                 EventDispatchTable::ERROR => 'Event store row not found (event_store_id=' . $eventStoreId . ')',

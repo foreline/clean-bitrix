@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Infrastructure\Event\Monitoring;
 
+use Bitrix\Main\Application;
 use Domain\Event\Enum\EventStoreStatusEnum;
 use Domain\Event\Monitoring\EventPurgeStrategyInterface;
 use Infrastructure\Event\Repository\Bitrix\ORM\EventDispatchTable;
@@ -46,38 +47,25 @@ final class ImmediatePurgeStrategy implements EventPurgeStrategyInterface
             ]);
             
             if ( 0 < $nonCompletedCount ) {
-                // Other dispatches still pending/processing/failed — do not purge
+                // Other dispatches still pending/processing/failed вЂ” do not purge
                 return;
             }
             
-            // All dispatches completed — purge all dispatch rows for this event
-            $dispatchRows = EventDispatchTable::getList([
-                'filter' => [
-                    '=' . EventDispatchTable::EVENT_STORE_ID => $eventStoreId,
-                ],
-                'select' => [EventDispatchTable::ID],
-            ]);
-            
-            $deletedDispatches = 0;
-            
-            while ( $row = $dispatchRows->fetch() ) {
-                $id = (int)($row[strtoupper(EventDispatchTable::ID)]
-                    ?? $row[EventDispatchTable::ID] ?? 0);
-                EventDispatchTable::delete($id);
-                $deletedDispatches++;
+            // Полный набор доставок уже опубликован атомарно. Один DELETE вместо
+            // загрузки ID и отдельного ORM DELETE на каждого подписчика.
+            $connection = Application::getConnection();
+            $connection->startTransaction();
+            try {
+                $connection->queryExecute('DELETE FROM servicedesk_event_dispatch WHERE event_store_id = ' . $eventStoreId);
+                $connection->queryExecute('DELETE FROM servicedesk_event_store WHERE id = ' . $eventStoreId);
+                $connection->commitTransaction();
+            } catch (Throwable $error) {
+                $connection->rollbackTransaction();
+                throw $error;
             }
-            
-            // Delete the event store row (the large serialized body)
-            EventStoreTable::delete($eventStoreId);
-            
-            $this->logger->debug('Auto-purged completed event', [
-                'event_store_id' => $eventStoreId,
-                'dispatches_deleted' => $deletedDispatches,
-            ]);
-            
         } catch (Throwable $e) {
             // Purge failure must NOT break event processing.
-            // The event was already successfully handled — purge is best-effort.
+            // The event was already successfully handled вЂ” purge is best-effort.
             $this->logger->warning('Auto-purge failed (non-critical)', [
                 'event_store_id' => $eventStoreId,
                 'event_dispatch_id' => $eventDispatchId,

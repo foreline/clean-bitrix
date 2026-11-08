@@ -108,5 +108,6 @@ class EventDispatchTable extends OrmDataManager
     {
         self::$entityTableClass = self::class;
         parent::checkTable($logger);
+        \Infrastructure\Event\EventQueueSchema::ensureIndexes();
     }
 }

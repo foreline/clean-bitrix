@@ -13,6 +13,7 @@ use Domain\Event\RetryableSubscriberInterface;
 use Domain\Event\RetryPolicy;
 use Domain\Events\ExceptionOccurredEvent;
 use Domain\User\Service\GetCurrentUser;
+use Domain\User\UseCase\GetUser;
 use Exception;
 use Infrastructure\Event\Message\AsyncEventMessage;
 use Infrastructure\Event\Monitoring\NullPurgeStrategy;
@@ -64,6 +65,9 @@ final class AsyncEventMessageHandler
     {
         $subscriberClass = $message->getSubscriberClass();
         $eventDispatchId = $message->getEventDispatchId();
+        $userContext = new GetCurrentUser();
+        $previousUser = $userContext->get();
+        $previousSystemContext = $userContext->isSystemContext();
         
         try {
             // Deserialize the event
@@ -73,7 +77,7 @@ final class AsyncEventMessageHandler
                 ['allowed_classes' => true]
             );
             
-            if ( false === $event ) {
+            if ( !$event instanceof EventInterface ) {
                 throw new RuntimeException(
                     'Failed to deserialize event: ' . $message->getEventClass()
                 );
@@ -90,11 +94,18 @@ final class AsyncEventMessageHandler
             // Events capture the authenticated user at publish time (Event::__construct).
             // Without this, permission checks in subscribers fail with NotAuthorizedException
             // because the worker runs as CLI with no web session.
-            if ( $event instanceof Event && null !== $event->getUser() ) {
-                ( new GetCurrentUser() )->set($event->getUser());
+            $actor = $event instanceof Event ? $event->getUser() : null;
+            if ( $event instanceof Event && null === $actor && null !== $event->getActorId() ) {
+                $actor = (new GetUser())->get($event->getActorId(), checkPermissions: false);
+                if ( null === $actor ) {
+                    throw new RuntimeException('Event actor no longer exists');
+                }
+            }
+            $userContext->set($actor)->setSystemContext(false);
+            if ( null !== $actor ) {
                 
                 $this->logger->debug('Restored user context for async processing', [
-                    'user_id' => $event->getUser()->getId(),
+                    'user_id' => $actor->getId(),
                     'subscriber' => $subscriberClass,
                 ]);
             }
@@ -122,8 +133,10 @@ final class AsyncEventMessageHandler
             );
             
         } catch ( Throwable $e ) {
-            Publisher::getInstance()->publish(new ExceptionOccurredEvent($e));
             $this->handleFailure($message, $e);
+            Publisher::getInstance()->publish(new ExceptionOccurredEvent($e));
+        } finally {
+            $userContext->set($previousUser)->setSystemContext($previousSystemContext);
         }
     }
     

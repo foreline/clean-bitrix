@@ -2,6 +2,8 @@
 
 ## 2026-11-08
 
+- feat(event): publish atomic batches and index delivery processing
+
 - chore(deps): require clean v3.4.0 and clean-ui v1.2.2
 
 ## [3.4.0] - 2026-11-07

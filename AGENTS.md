@@ -213,8 +213,8 @@ php vendor/bin/phpunit --coverage-html=coverage/
 - Transport uses a normalized two-table design:
   - `EventStoreTable` — immutable event log (serialized event body)
   - `EventDispatchTable` — per-subscriber dispatch queue
-- The event body is written once per object instance (cached by `spl_object_id`).
-- On async dispatch failure the dispatcher falls back to synchronous execution to prevent event loss.
+- Each publication atomically writes one body and its complete set of dispatch rows, without an object-ID cache.
+- Failed publication rolls back the batch and propagates the error to the caller; no synchronous fallback.
 - Async workers restore user context from serialized events when permission checks are required.
 - Retry/backoff and purge behavior are controlled via `.env`:
   - `ASYNC_EVENTS_ENABLED`, `MESSENGER_TRANSPORT_DSN`
@@ -266,7 +266,7 @@ ADR conventions:
 
 ## Release and push policy
 
-- We are the maintainers of this library. The repo has two remotes: `github` and `gitlab`. All changes AND release tags are pushed to **all** remotes (`git push github main --tags && git push gitlab main --tags`). GitLab is release-critical (composer consumers fetch from there), but github must not silently fall behind.
+- Publish changes and annotated tags only to the verified GitHub remote. A retained GitLab remote is not an authorized destination.
 - Tagging conventions: see `.github/prompts/git-commit.prompt.md` (SemVer, annotated tags, conventional commits, CHANGELOG.md). A core dependency update (`foreline/clean`, `foreline/clean-ui`, `foreline/io-response`) always gets a tag.
 - Dependency cascade: after a `clean-bitrix` release, update downstream consumers — e.g. the servicedesk module: `composer update foreline/clean-bitrix -W`, commit the lock.
 
