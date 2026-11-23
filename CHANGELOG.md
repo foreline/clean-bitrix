@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-23
+
+- fix(user): hydrate avatars and preserve unchanged recovery codes
+
 ## 2026-11-08
 
 - fix(event): preserve queue failure diagnostics through nested rollback

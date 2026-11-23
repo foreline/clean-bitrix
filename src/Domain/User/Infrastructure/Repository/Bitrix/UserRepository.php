@@ -70,6 +70,12 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
         $reflection = new ReflectionClass(__CLASS__);
         return $reflection->getConstants();
     }
+
+    /** Загружает файл аватара при чтении полного профиля. */
+    public static function getReferenceFields(): array
+    {
+        return [UserRepositoryInterface::AVATAR];
+    }
     
     /**
      * @param array $filter
@@ -372,12 +378,29 @@ class UserRepository extends UserProxy implements UserRepositoryInterface
         $userData = array_change_key_case($userData, CASE_UPPER);
         
         $avatarKey = strtoupper(UserRepositoryInterface::AVATAR);
+
+        $current = UserTable::getList([
+            'select' => ['LOGIN', 'EMAIL', 'ACTIVE', $avatarKey],
+            'filter' => ['=ID' => $user->getId()],
+        ])->fetchObject();
+        if ( null === $current ) {
+            throw new RuntimeException('Обновляемый пользователь не найден');
+        }
+
+        // Наличие любого из этих полей заставляет CUser сменить код восстановления.
+        $identity = [
+            'LOGIN' => $current->getLogin(),
+            'EMAIL' => $current->getEmail(),
+            'ACTIVE' => $current->getActive() ? 'Y' : 'N',
+        ];
+        foreach ( $identity as $key => $value ) {
+            if ( $userData[$key] === $value ) {
+                unset($userData[$key]);
+            }
+        }
         
         if ( is_array($userData[$avatarKey] ?? null) ) {
-            $currentPhotoId = (int)( UserTable::getList([
-                'select' => [$avatarKey],
-                'filter' => ['=ID' => $user->getId()],
-            ])->fetch()[$avatarKey] ?? 0 );
+            $currentPhotoId = (int)$current->get($avatarKey);
             
             if ( 0 < $currentPhotoId && $currentPhotoId === $user->getAvatar()?->getId() ) {
                 // Аватар не менялся — не пересохраняем PERSONAL_PHOTO, чтобы не плодить копии файла

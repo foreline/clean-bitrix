@@ -33,7 +33,7 @@ class UserTable extends \Bitrix\Main\UserTable
             (new Reference(
                 UserRepositoryInterface::AVATAR . '_ref',
                 FileTable::class,
-                Join::on('this.' . UserRepositoryInterface::AVATAR, 'ref.ID')
+                Join::on('this.' . strtoupper(UserRepositoryInterface::AVATAR), 'ref.ID')
             ))->configureJoinType('left');
         
         // LEFT JOIN на группы пользователя (не исключает пользователей без групп, в отличие от INNER JOIN 'GROUPS')
